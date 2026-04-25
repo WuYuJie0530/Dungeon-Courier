@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dungeon Courier</title>
+  </head>
+  <body>
+    <div id="app" class="game-shell">
+      <header class="hudbar" aria-label="游戏状态">
+        <section class="hud-card lives-card">
+          <div class="hud-symbol heart-symbol" aria-hidden="true"></div>
+          <div>
+            <p>生命</p>
+            <div id="livesHud" class="life-pips" aria-live="polite"></div>
+          </div>
+        </section>
+        <section class="hud-card">
+          <div class="hud-symbol clock-symbol" aria-hidden="true"></div>
+          <div>
+            <p>剩余时间</p>
+            <strong id="timerHud">01:30</strong>
+          </div>
+        </section>
+        <section class="hud-card">
+          <div class="hud-symbol letter-symbol" aria-hidden="true"></div>
+          <div>
+            <p>已收集信件</p>
+            <strong id="lettersHud">0 / 3</strong>
+          </div>
+        </section>
+        <section class="hud-card">
+          <div class="hud-symbol dash-symbol" aria-hidden="true"></div>
+          <div>
+            <p>冲刺</p>
+            <div id="dashHud" class="dash-meter" aria-live="polite"></div>
+          </div>
+        </section>
+        <section class="hud-card pause-card">
+          <button id="pauseButton" class="pause-control" type="button" aria-label="暂停或继续">
+            <span></span><span></span>
+          </button>
+          <div>
+            <p id="pauseHud">进行中</p>
+            <small>按 P 暂停 / 继续</small>
+          </div>
+        </section>
+      </header>
+
+      <main class="dungeon-layout">
+        <aside class="side-rail left-rail" aria-label="敌人与操作">
+          <section class="info-panel">
+            <h2>敌人</h2>
+            <div class="enemy-entry">
+              <span class="enemy-avatar patrol-avatar" aria-hidden="true"></span>
+              <div>
+                <strong>巡逻者</strong>
+                <p>沿固定方向巡逻，撞墙后转向。</p>
+              </div>
+            </div>
+            <div class="enemy-route" aria-hidden="true"></div>
+            <div class="enemy-entry">
+              <span class="enemy-avatar chaser-avatar" aria-hidden="true"></span>
+              <div>
+                <strong>追踪者</strong>
+                <p>进入视野后会追你，墙体会阻挡它。</p>
+              </div>
+            </div>
+            <div class="vision-cone" aria-hidden="true"></div>
+          </section>
+
+          <section class="info-panel controls-panel">
+            <h2>操作</h2>
+            <div class="control-row"><kbd>WASD</kbd><span>移动</span></div>
+            <div class="control-row"><kbd>方向键</kbd><span>移动</span></div>
+            <div class="control-row"><kbd>Shift</kbd><span>冲刺</span></div>
+            <div class="control-row"><kbd>P</kbd><span>暂停</span></div>
+            <div class="control-row"><kbd>R</kbd><span>重开</span></div>
+          </section>
+        </aside>
+
+        <section class="canvas-panel" aria-label="Dungeon canvas">
+          <canvas id="gameCanvas" width="960" height="624"></canvas>
+          <div id="resultOverlay" class="result-overlay" hidden>
+            <p id="resultTitle"></p>
+            <button id="overlayRestartButton" type="button">重新开始</button>
+          </div>
+        </section>
+
+        <aside class="side-rail right-rail" aria-label="目标与图例">
+          <section class="info-panel objective-panel">
+            <h2>目标</h2>
+            <p id="objectiveText">收集所有信件，然后抵达出口。</p>
+            <div class="exit-illustration" aria-hidden="true"></div>
+          </section>
+
+          <section class="info-panel legend-panel">
+            <h2>图例</h2>
+            <div><span class="legend-icon letter-legend"></span><span>信件</span></div>
+            <div><span class="legend-icon exit-legend"></span><span>出口</span></div>
+            <div><span class="legend-icon wall-legend"></span><span>墙体</span></div>
+            <div><span class="legend-icon chaser-legend"></span><span>追踪者</span></div>
+            <div><span class="legend-icon patrol-legend"></span><span>巡逻者</span></div>
+          </section>
+
+          <section class="info-panel restart-panel">
+            <label for="seedInput">地图种子</label>
+            <input id="seedInput" aria-label="地图种子" value="courier-001" />
+            <div class="status-grid">
+              <span>追踪者</span><strong id="chaserCount">0</strong>
+              <span>巡逻者</span><strong id="patrollerCount">0</strong>
+              <span>当前种子</span><strong id="seedHud">courier-001</strong>
+            </div>
+            <button id="restartButton" type="button">重新开始</button>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
