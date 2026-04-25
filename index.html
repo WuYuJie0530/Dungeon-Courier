@@ -26,13 +26,13 @@
           <div class="hud-symbol letter-symbol" aria-hidden="true"></div>
           <div>
             <p>已收集信件</p>
-            <strong id="lettersHud">0 / 3</strong>
+            <strong id="lettersHud">00 / 03</strong>
           </div>
         </section>
         <section class="hud-card">
           <div class="hud-symbol dash-symbol" aria-hidden="true"></div>
           <div>
-            <p>冲刺</p>
+            <p>冲刺能量</p>
             <div id="dashHud" class="dash-meter" aria-live="polite"></div>
           </div>
         </section>
@@ -49,37 +49,37 @@
 
       <main class="dungeon-layout">
         <aside class="side-rail left-rail" aria-label="敌人与操作">
-          <section class="info-panel">
-            <h2>敌人</h2>
-            <div class="enemy-entry">
+          <section class="info-panel intel-panel">
+            <h2>敌人情报</h2>
+            <div class="enemy-card">
               <span class="enemy-avatar patrol-avatar" aria-hidden="true"></span>
               <div>
                 <strong>巡逻者</strong>
-                <p>沿固定方向巡逻，撞墙后转向。</p>
+                <p>沿固定方向巡逻，遇到墙体后转向。</p>
+                <div class="enemy-route" aria-hidden="true"></div>
               </div>
             </div>
-            <div class="enemy-route" aria-hidden="true"></div>
-            <div class="enemy-entry">
+            <div class="enemy-card">
               <span class="enemy-avatar chaser-avatar" aria-hidden="true"></span>
               <div>
                 <strong>追踪者</strong>
-                <p>进入视野后会追你，墙体会阻挡它。</p>
+                <p>进入视野后会追踪你，被其发现则失败风险上升。</p>
+                <div class="vision-cone" aria-hidden="true"></div>
               </div>
             </div>
-            <div class="vision-cone" aria-hidden="true"></div>
           </section>
 
           <section class="info-panel controls-panel">
-            <h2>操作</h2>
-            <div class="control-row"><kbd>WASD</kbd><span>移动</span></div>
-            <div class="control-row"><kbd>方向键</kbd><span>移动</span></div>
+            <h2>操作说明</h2>
+            <div class="control-row"><kbd>W A S D</kbd><span>移动</span></div>
+            <div class="control-row"><kbd>↑ ↓ ← →</kbd><span>移动</span></div>
             <div class="control-row"><kbd>Shift</kbd><span>冲刺</span></div>
-            <div class="control-row"><kbd>P</kbd><span>暂停</span></div>
-            <div class="control-row"><kbd>R</kbd><span>重开</span></div>
+            <div class="control-row"><kbd>P</kbd><span>暂停 / 继续</span></div>
+            <div class="control-row"><kbd>R</kbd><span>重开关卡</span></div>
           </section>
         </aside>
 
-        <section class="canvas-panel" aria-label="Dungeon canvas">
+        <section class="canvas-panel" aria-label="地牢地图">
           <canvas id="gameCanvas" width="960" height="624"></canvas>
           <div id="resultOverlay" class="result-overlay" hidden>
             <p id="resultTitle"></p>
@@ -101,6 +101,7 @@
             <div><span class="legend-icon wall-legend"></span><span>墙体</span></div>
             <div><span class="legend-icon chaser-legend"></span><span>追踪者</span></div>
             <div><span class="legend-icon patrol-legend"></span><span>巡逻者</span></div>
+            <div><span class="legend-icon player-legend"></span><span>玩家</span></div>
           </section>
 
           <section class="info-panel restart-panel">

@@ -15,6 +15,7 @@ export class Renderer {
     this.ensureCanvasSize(map);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawMap(map);
+    this.drawCoordinateOverlay(map);
     this.drawDecorations(map);
     this.drawExit(state);
     this.drawLetters(state);
@@ -35,10 +36,28 @@ export class Renderer {
 
   private drawMap(map: MapData): void {
     const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    gradient.addColorStop(0, "#0b0c0d");
-    gradient.addColorStop(1, "#030405");
+    gradient.addColorStop(0, "#061016");
+    gradient.addColorStop(0.6, "#02080b");
+    gradient.addColorStop(1, "#010304");
     this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.strokeStyle = "rgba(15, 238, 232, 0.09)";
+    this.ctx.lineWidth = 1;
+    for (let x = 0; x <= map.width; x += 1) {
+      const px = x * TILE_SIZE + 0.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(px, 0);
+      this.ctx.lineTo(px, this.canvas.height);
+      this.ctx.stroke();
+    }
+    for (let y = 0; y <= map.height; y += 1) {
+      const py = y * TILE_SIZE + 0.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, py);
+      this.ctx.lineTo(this.canvas.width, py);
+      this.ctx.stroke();
+    }
 
     for (let y = 0; y < map.height; y += 1) {
       for (let x = 0; x < map.width; x += 1) {
@@ -61,19 +80,19 @@ export class Renderer {
     const px = x * TILE_SIZE;
     const py = y * TILE_SIZE;
     const hash = hashCell(map.seed, x, y);
-    const shade = 30 + (hash % 12);
-    this.ctx.fillStyle = `rgb(${shade}, ${shade + 2}, ${shade + 4})`;
+    const shade = 28 + (hash % 13);
+    this.ctx.fillStyle = `rgb(${shade}, ${shade + 5}, ${shade + 7})`;
     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    this.ctx.strokeStyle = "rgba(121, 114, 100, 0.24)";
+    this.ctx.strokeStyle = "rgba(139, 163, 165, 0.26)";
     this.ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
-    this.ctx.strokeStyle = "rgba(0, 0, 0, 0.36)";
+    this.ctx.strokeStyle = "rgba(0, 0, 0, 0.42)";
     this.ctx.beginPath();
     this.ctx.moveTo(px + 1, py + TILE_SIZE - 1);
     this.ctx.lineTo(px + TILE_SIZE - 1, py + TILE_SIZE - 1);
     this.ctx.stroke();
 
     if (hash % 9 === 0) {
-      this.ctx.strokeStyle = "rgba(5, 6, 7, 0.48)";
+      this.ctx.strokeStyle = "rgba(3, 8, 10, 0.55)";
       this.ctx.beginPath();
       this.ctx.moveTo(px + 5, py + 7);
       this.ctx.lineTo(px + 12, py + 10);
@@ -87,22 +106,22 @@ export class Renderer {
     const py = y * TILE_SIZE;
     const nearFloor = hasAdjacentFloor(map, x, y);
     if (!nearFloor) {
-      this.ctx.fillStyle = "#050607";
+      this.ctx.fillStyle = "#02080b";
       this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-      this.ctx.strokeStyle = "rgba(20, 24, 28, 0.35)";
+      this.ctx.strokeStyle = "rgba(12, 42, 48, 0.38)";
       this.ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
       return;
     }
 
     const hash = hashCell(map.seed, x, y);
-    const shade = 58 + (hash % 22);
-    this.ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade - 3})`;
+    const shade = 58 + (hash % 24);
+    this.ctx.fillStyle = `rgb(${shade}, ${shade + 1}, ${shade})`;
     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    this.ctx.fillStyle = `rgba(255, 239, 204, ${0.1 + (hash % 5) / 50})`;
+    this.ctx.fillStyle = `rgba(210, 235, 235, ${0.1 + (hash % 5) / 50})`;
     this.ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, 5);
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.33)";
     this.ctx.fillRect(px + 2, py + TILE_SIZE - 6, TILE_SIZE - 4, 4);
-    this.ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+    this.ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
     this.ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
 
     if (hash % 5 === 0) {
@@ -113,6 +132,38 @@ export class Renderer {
       this.ctx.lineTo(px + 8, py + 20);
       this.ctx.stroke();
     }
+  }
+
+  private drawCoordinateOverlay(map: MapData): void {
+    this.ctx.save();
+    this.ctx.strokeStyle = "rgba(17, 244, 238, 0.78)";
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(1, 1, this.canvas.width - 2, this.canvas.height - 2);
+
+    this.ctx.fillStyle = "rgba(17, 244, 238, 0.78)";
+    this.ctx.font = "700 11px ui-monospace, SFMono-Regular, Consolas, monospace";
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+
+    const letters = "ABCDEFGHIJKL".split("");
+    const rowStep = Math.max(1, Math.floor((map.height - 3) / letters.length));
+    for (let i = 0; i < letters.length; i += 1) {
+      const y = (i * rowStep + 1.5) * TILE_SIZE;
+      if (y < this.canvas.height - TILE_SIZE) {
+        this.ctx.fillText(letters[i], TILE_SIZE * 0.58, y);
+      }
+    }
+
+    const columnCount: number = 24;
+    const xStart = 2;
+    const xEnd = map.width - 2;
+    for (let i = 0; i < columnCount; i += 1) {
+      const t = columnCount === 1 ? 0 : i / (columnCount - 1);
+      const x = (xStart + (xEnd - xStart) * t) * TILE_SIZE;
+      this.ctx.fillText(String(i + 1).padStart(2, "0"), x, this.canvas.height - TILE_SIZE * 0.55);
+    }
+
+    this.ctx.restore();
   }
 
   private drawDecorations(map: MapData): void {
