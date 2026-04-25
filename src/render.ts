@@ -435,11 +435,18 @@ export class Renderer {
     this.ctx.fillStyle = "#fff2d1";
     this.ctx.font = "900 42px Microsoft YaHei UI, system-ui, sans-serif";
     this.ctx.textAlign = "center";
-    const label = state.status === "paused" ? "已暂停" : state.status === "won" ? "派送完成" : "信使倒下";
+    const label =
+      state.status === "paused"
+        ? "已暂停"
+        : state.status === "completed"
+          ? "任务完成"
+          : state.status === "won"
+            ? "关卡完成"
+            : "信使倒下";
     this.ctx.fillText(label, this.canvas.width / 2, this.canvas.height / 2);
     this.ctx.font = "700 18px Microsoft YaHei UI, system-ui, sans-serif";
     this.ctx.fillStyle = "#d8ccb7";
-    const hint = state.status === "paused" ? "按 P 继续" : "点击重新开始";
+    const hint = state.status === "paused" ? "按 P 继续" : state.status === "completed" ? "五关全部完成" : "查看结算";
     this.ctx.fillText(hint, this.canvas.width / 2, this.canvas.height / 2 + 34);
     this.ctx.textAlign = "start";
   }

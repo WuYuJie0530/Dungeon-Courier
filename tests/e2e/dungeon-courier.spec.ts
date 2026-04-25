@@ -81,6 +81,38 @@ test("winning a level unlocks the next level flow", async ({ page }) => {
   await expect(page.locator("#levelHud")).toContainText(`第 ${nextState.level} 关`);
 });
 
+test("final fifth level shows campaign celebration instead of another level", async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const api = window.__GAME_TEST_API__;
+    const helpers = window.__TEST_HELPERS__;
+    api.restartCampaign();
+    while (api.getState().level < api.getState().maxLevel) {
+      api.nextLevel();
+    }
+
+    const map = api.getMap();
+    for (const letter of map.letterSpawns) {
+      helpers.followPath(api, helpers.findPath(map, api.getState().player, letter));
+    }
+    helpers.followPath(api, helpers.findPath(map, api.getState().player, map.exit));
+    const completed = api.getState();
+    api.nextLevel();
+    const afterNext = api.getState();
+    return { completed, afterNext };
+  });
+
+  expect(result.completed.level).toBe(result.completed.maxLevel);
+  expect(result.completed.status).toBe("completed");
+  expect(result.completed.campaignCompleted).toBe(true);
+  expect(result.afterNext.level).toBe(result.completed.maxLevel);
+  await expect(page.locator("#resultTitle")).toContainText("任务完成");
+  await expect(page.locator("#overlayRestartButton")).toContainText("重新挑战五关");
+  await page.click("#campaignRestartButton");
+  const state = await page.evaluate(() => window.__GAME_TEST_API__.getState());
+  expect(state.level).toBe(1);
+  expect(state.status).toBe("playing");
+});
+
 test("early levels ramp difficulty instead of starting at full pressure", async ({ page }) => {
   const result = await page.evaluate(() => {
     const api = window.__GAME_TEST_API__;

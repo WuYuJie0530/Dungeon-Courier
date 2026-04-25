@@ -82,8 +82,58 @@
         <section class="canvas-panel" aria-label="地牢地图">
           <canvas id="gameCanvas" width="960" height="624"></canvas>
           <div id="resultOverlay" class="result-overlay" hidden>
-            <p id="resultTitle"></p>
-            <button id="overlayRestartButton" type="button">进入下一关</button>
+            <div class="result-card">
+              <div class="celebration-effects" aria-hidden="true">
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="celebration-emblem" aria-hidden="true">
+                <span class="crown-mark"></span>
+                <span class="medal-letter"></span>
+              </div>
+              <p id="resultTitle"></p>
+              <p id="resultSubtitle" class="result-subtitle"></p>
+              <div class="result-stats" aria-label="通关数据">
+                <div>
+                  <span>关卡</span>
+                  <strong id="resultLevel">1 / 5</strong>
+                </div>
+                <div>
+                  <span>剩余时间</span>
+                  <strong id="resultTime">01:30</strong>
+                </div>
+                <div>
+                  <span>收集信件</span>
+                  <strong id="resultLetters">03 / 03</strong>
+                </div>
+                <div>
+                  <span>剩余生命</span>
+                  <strong id="resultLives">3</strong>
+                </div>
+                <div>
+                  <span>任务评价</span>
+                  <strong id="resultGrade">S</strong>
+                </div>
+              </div>
+              <p id="resultPraise" class="result-praise"></p>
+              <div class="result-actions">
+                <button id="overlayRetryButton" type="button">再次挑战</button>
+                <button id="overlayRestartButton" class="primary-result-action" type="button">进入下一关</button>
+                <button id="campaignRestartButton" type="button">返回第一关</button>
+              </div>
+            </div>
           </div>
         </section>
 

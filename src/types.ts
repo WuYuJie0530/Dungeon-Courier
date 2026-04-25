@@ -6,9 +6,10 @@ export const TIME_LIMIT_SECONDS = 90;
 export const PLAYER_START_LIVES = 3;
 export const DASH_COOLDOWN_FRAMES = 90;
 export const DASH_DISTANCE_TILES = 3;
+export const MAX_LEVEL = 5;
 
 export type Direction = "up" | "down" | "left" | "right";
-export type GameStatus = "playing" | "paused" | "won" | "lost";
+export type GameStatus = "playing" | "paused" | "won" | "lost" | "completed";
 export type EnemyKind = "chaser" | "patroller";
 export type Tile = 0 | 1;
 
@@ -80,7 +81,9 @@ export interface EntitySnapshot {
 export interface GameStateSnapshot extends EntitySnapshot {
   seed: string;
   level: number;
+  maxLevel: number;
   nextLevelSeed: string;
+  campaignCompleted: boolean;
   difficultyName: string;
   difficultyRank: number;
   frame: number;
@@ -101,6 +104,7 @@ export interface GameTestApi {
   movePlayer(direction: Direction): GameStateSnapshot;
   dash(direction: Direction): GameStateSnapshot;
   nextLevel(): GameStateSnapshot;
+  restartCampaign(): GameStateSnapshot;
   getMap(): MapData;
   getEntities(): EntitySnapshot;
   pause(): GameStateSnapshot;

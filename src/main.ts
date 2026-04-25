@@ -3,6 +3,7 @@ import { Renderer } from "./render";
 import { installTestApi } from "./testApi";
 import {
   DASH_COOLDOWN_FRAMES,
+  MAX_LEVEL,
   PLAYER_START_LIVES,
   TIME_LIMIT_SECONDS,
   type Direction,
@@ -16,8 +17,17 @@ const renderer = new Renderer(canvas);
 const pauseButton = requiredElement<HTMLButtonElement>("pauseButton");
 const restartButton = requiredElement<HTMLButtonElement>("restartButton");
 const overlayRestartButton = requiredElement<HTMLButtonElement>("overlayRestartButton");
+const overlayRetryButton = requiredElement<HTMLButtonElement>("overlayRetryButton");
+const campaignRestartButton = requiredElement<HTMLButtonElement>("campaignRestartButton");
 const resultOverlay = requiredElement<HTMLDivElement>("resultOverlay");
 const resultTitle = requiredElement<HTMLParagraphElement>("resultTitle");
+const resultSubtitle = requiredElement<HTMLParagraphElement>("resultSubtitle");
+const resultLevel = requiredElement<HTMLElement>("resultLevel");
+const resultTime = requiredElement<HTMLElement>("resultTime");
+const resultLetters = requiredElement<HTMLElement>("resultLetters");
+const resultLives = requiredElement<HTMLElement>("resultLives");
+const resultGrade = requiredElement<HTMLElement>("resultGrade");
+const resultPraise = requiredElement<HTMLElement>("resultPraise");
 const hud = {
   lives: requiredElement<HTMLSpanElement>("livesHud"),
   timer: requiredElement<HTMLSpanElement>("timerHud"),
@@ -53,11 +63,24 @@ restartButton.addEventListener("click", () => {
 });
 
 overlayRestartButton.addEventListener("click", () => {
-  if (engine.getState().status === "won") {
+  const status = engine.getState().status;
+  if (status === "won") {
     engine.nextLevel();
+  } else if (status === "completed") {
+    engine.restartCampaign();
   } else {
     engine.restartLevel();
   }
+  renderNow();
+});
+
+overlayRetryButton.addEventListener("click", () => {
+  engine.restartLevel();
+  renderNow();
+});
+
+campaignRestartButton.addEventListener("click", () => {
+  engine.restartCampaign();
   renderNow();
 });
 
@@ -134,17 +157,47 @@ function updateHud(state: GameStateSnapshot): void {
   hud.chasers.textContent = String(chasers);
   hud.patrollers.textContent = String(patrollers);
   hud.objective.textContent =
-    state.status === "won"
-      ? `第 ${state.level} 关完成。进入下一关继续派送。`
+    state.status === "completed"
+      ? "五关任务全部完成，地牢邮路已打通。"
+      : state.status === "won"
+        ? `第 ${state.level} 关完成。进入下一关继续派送。`
       : state.status === "lost"
         ? "本关失败。重新开始当前关卡。"
         : state.exit.open
           ? "出口已经开启，立刻撤离。"
           : "收集所有信件，然后抵达出口。";
   pauseButton.classList.toggle("is-playing", state.status === "paused");
-  resultOverlay.hidden = state.status !== "won" && state.status !== "lost";
-  resultTitle.textContent = state.status === "won" ? "关卡完成" : "信使倒下";
-  overlayRestartButton.textContent = state.status === "won" ? "进入下一关" : "重新开始本关";
+  resultOverlay.hidden = state.status !== "won" && state.status !== "lost" && state.status !== "completed";
+  updateResultOverlay(state);
+}
+
+function updateResultOverlay(state: GameStateSnapshot): void {
+  const wonLevel = state.status === "won";
+  const completedCampaign = state.status === "completed";
+  const failedLevel = state.status === "lost";
+  const grade = completedCampaign ? "S+" : state.lives >= 3 && state.timeRemaining >= 45 ? "S" : state.lives >= 2 ? "A" : "B";
+
+  resultOverlay.classList.toggle("campaign-complete", completedCampaign);
+  resultOverlay.classList.toggle("level-failed", failedLevel);
+  resultTitle.textContent = completedCampaign ? "任务完成" : wonLevel ? "关卡完成" : "信使倒下";
+  resultSubtitle.textContent = completedCampaign
+    ? "信件已全部送达，成功脱出！"
+    : wonLevel
+      ? `第 ${state.level} 关完成，下一关难度将提升。`
+      : "本关失败，调整路线后再试一次。";
+  resultLevel.textContent = `${Math.min(state.level, MAX_LEVEL)} / ${MAX_LEVEL}`;
+  resultTime.textContent = formatClock(state.timeRemaining);
+  resultLetters.textContent = `${pad2(state.collectedLetters)} / ${pad2(state.totalLetters)}`;
+  resultLives.textContent = String(state.lives);
+  resultGrade.textContent = failedLevel ? "-" : grade;
+  resultPraise.textContent = completedCampaign
+    ? "完美潜入，表现出色！"
+    : wonLevel
+      ? "路线清晰，继续保持。"
+      : "别急，第一封信总是最难送的。";
+  overlayRetryButton.textContent = failedLevel ? "再次挑战" : "重玩本关";
+  overlayRestartButton.textContent = completedCampaign ? "重新挑战五关" : wonLevel ? "进入下一关" : "重新开始本关";
+  campaignRestartButton.hidden = failedLevel;
 }
 
 function createLifePips(lives: number): HTMLElement[] {
@@ -187,6 +240,8 @@ function statusLabel(status: GameStateSnapshot["status"]): string {
       return "已暂停";
     case "won":
       return "关卡完成";
+    case "completed":
+      return "任务完成";
     case "lost":
       return "失败";
     default:

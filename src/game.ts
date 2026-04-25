@@ -15,6 +15,7 @@ import {
   DASH_COOLDOWN_FRAMES,
   DASH_DISTANCE_TILES,
   FPS,
+  MAX_LEVEL,
   PLAYER_START_LIVES,
   TIME_LIMIT_SECONDS,
   type Direction,
@@ -95,7 +96,16 @@ export class GameEngine {
   }
 
   nextLevel(): GameStateSnapshot {
+    if (this.level >= MAX_LEVEL) {
+      return this.getState();
+    }
     this.level += 1;
+    this.nextSeed = levelSeed(this.level);
+    return this.restart(this.nextSeed);
+  }
+
+  restartCampaign(): GameStateSnapshot {
+    this.level = 1;
     this.nextSeed = levelSeed(this.level);
     return this.restart(this.nextSeed);
   }
@@ -181,7 +191,9 @@ export class GameEngine {
       ...this.getEntities(),
       seed: this.seed,
       level: this.level,
+      maxLevel: MAX_LEVEL,
       nextLevelSeed: levelSeed(this.level + 1),
+      campaignCompleted: this.status === "completed",
       difficultyName: difficulty.name,
       difficultyRank: difficulty.rank,
       frame: this.frame,
@@ -292,7 +304,7 @@ export class GameEngine {
 
   private checkExit(): void {
     if (samePoint(this.player, this.exit) && this.exit.open) {
-      this.status = "won";
+      this.status = this.level >= MAX_LEVEL ? "completed" : "won";
     }
   }
 
@@ -318,7 +330,8 @@ export class GameEngine {
 }
 
 export function levelSeed(level: number): string {
-  return `courier-level-${String(Math.max(1, Math.floor(level))).padStart(3, "0")}`;
+  const normalizedLevel = Math.min(MAX_LEVEL, Math.max(1, Math.floor(level)));
+  return `courier-level-${String(normalizedLevel).padStart(3, "0")}`;
 }
 
 interface DifficultyProfile {
@@ -362,15 +375,24 @@ export function getDifficultyProfile(level: number): DifficultyProfile {
       patrollerMoveEveryFrames: 24,
     };
   }
+  if (normalizedLevel === 4) {
+    return {
+      name: "困难",
+      rank: 4,
+      enemyCount: 4,
+      chaserAlertRange: 7,
+      chaserMoveEveryFrames: 16,
+      patrollerMoveEveryFrames: 20,
+    };
+  }
 
-  const extra = normalizedLevel - 3;
   return {
-    name: "危险",
-    rank: Math.min(9, 3 + extra),
+    name: "终局",
+    rank: 5,
     enemyCount: 4,
-    chaserAlertRange: Math.min(9, 6 + Math.floor(extra / 2)),
-    chaserMoveEveryFrames: Math.max(10, 18 - extra * 2),
-    patrollerMoveEveryFrames: Math.max(14, 24 - extra * 2),
+    chaserAlertRange: 8,
+    chaserMoveEveryFrames: 14,
+    patrollerMoveEveryFrames: 18,
   };
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DIRECTIONS, findPath, isFloor, nextPoint } from "../src/collision";
-import { DASH_COOLDOWN_FRAMES, FPS, TIME_LIMIT_SECONDS } from "../src/types";
+import { DASH_COOLDOWN_FRAMES, FPS, MAX_LEVEL, TIME_LIMIT_SECONDS } from "../src/types";
 import { GameEngine } from "../src/game";
 import { findOpenDirection, routeTo } from "./helpers";
 
@@ -194,5 +194,27 @@ describe("Dungeon Courier engine", () => {
     const levelThreeChaser = levelThree.enemies.find((enemy) => enemy.kind === "chaser")!;
     expect(levelThreeChaser.alertRange).toBeGreaterThan(levelOneChaser.alertRange);
     expect(levelThreeChaser.moveEveryFrames).toBeLessThan(levelOneChaser.moveEveryFrames);
+  });
+
+  it("ends the campaign after five completed levels", () => {
+    const engine = new GameEngine();
+    while (engine.getState().level < MAX_LEVEL) {
+      engine.nextLevel();
+    }
+
+    const map = engine.getMap();
+    for (const letter of map.letterSpawns) {
+      routeTo(engine, letter);
+    }
+    routeTo(engine, map.exit);
+
+    const completed = engine.getState();
+    expect(completed.level).toBe(MAX_LEVEL);
+    expect(completed.status).toBe("completed");
+    expect(completed.campaignCompleted).toBe(true);
+
+    const afterNext = engine.nextLevel();
+    expect(afterNext.level).toBe(MAX_LEVEL);
+    expect(afterNext.status).toBe("completed");
   });
 });
