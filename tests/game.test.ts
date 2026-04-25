@@ -172,4 +172,27 @@ describe("Dungeon Courier engine", () => {
     expect(next.collectedLetters).toBe(0);
     expect(next.player).toMatchObject(engine.getMap().spawn);
   });
+
+  it("scales difficulty from early tutorial pressure to later danger", () => {
+    const engine = new GameEngine();
+    const levelOne = engine.getState();
+    engine.nextLevel();
+    const levelTwo = engine.getState();
+    engine.nextLevel();
+    const levelThree = engine.getState();
+
+    expect(levelOne.difficultyName).toBe("入门");
+    expect(levelOne.enemies.length).toBe(2);
+    expect(levelOne.enemies.some((enemy) => enemy.kind === "chaser")).toBe(true);
+    expect(levelOne.enemies.some((enemy) => enemy.kind === "patroller")).toBe(true);
+
+    expect(levelTwo.enemies.length).toBeGreaterThan(levelOne.enemies.length);
+    expect(levelThree.enemies.length).toBeGreaterThanOrEqual(levelTwo.enemies.length);
+    expect(levelThree.difficultyRank).toBeGreaterThan(levelOne.difficultyRank);
+
+    const levelOneChaser = levelOne.enemies.find((enemy) => enemy.kind === "chaser")!;
+    const levelThreeChaser = levelThree.enemies.find((enemy) => enemy.kind === "chaser")!;
+    expect(levelThreeChaser.alertRange).toBeGreaterThan(levelOneChaser.alertRange);
+    expect(levelThreeChaser.moveEveryFrames).toBeLessThan(levelOneChaser.moveEveryFrames);
+  });
 });

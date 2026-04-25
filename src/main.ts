@@ -25,6 +25,7 @@ const hud = {
   dash: requiredElement<HTMLSpanElement>("dashHud"),
   pause: requiredElement<HTMLSpanElement>("pauseHud"),
   level: requiredElement<HTMLElement>("levelHud"),
+  difficulty: requiredElement<HTMLElement>("difficultyHud"),
   objective: requiredElement<HTMLElement>("objectiveText"),
   chasers: requiredElement<HTMLElement>("chaserCount"),
   patrollers: requiredElement<HTMLElement>("patrollerCount"),
@@ -129,6 +130,7 @@ function updateHud(state: GameStateSnapshot): void {
   hud.dash.replaceChildren(...createDashMeter(state.dashCooldownFrames));
   hud.pause.textContent = statusLabel(state.status);
   hud.level.textContent = `第 ${state.level} 关`;
+  hud.difficulty.textContent = state.difficultyName;
   hud.chasers.textContent = String(chasers);
   hud.patrollers.textContent = String(patrollers);
   hud.objective.textContent =

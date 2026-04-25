@@ -81,6 +81,8 @@ export interface GameStateSnapshot extends EntitySnapshot {
   seed: string;
   level: number;
   nextLevelSeed: string;
+  difficultyName: string;
+  difficultyRank: number;
   frame: number;
   timeRemaining: number;
   lives: number;

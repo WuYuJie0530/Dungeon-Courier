@@ -71,14 +71,15 @@ export class GameEngine {
       y: point.y,
       collected: false,
     }));
-    this.enemies = this.map.enemySpawns.map((spawn) => ({
+    const difficulty = getDifficultyProfile(this.level);
+    this.enemies = this.map.enemySpawns.slice(0, difficulty.enemyCount).map((spawn) => ({
       id: spawn.id,
       kind: spawn.kind,
       x: spawn.x,
       y: spawn.y,
       direction: spawn.direction,
-      alertRange: spawn.kind === "chaser" ? 6 : 0,
-      moveEveryFrames: spawn.kind === "chaser" ? 14 : 18,
+      alertRange: spawn.kind === "chaser" ? difficulty.chaserAlertRange : 0,
+      moveEveryFrames: spawn.kind === "chaser" ? difficulty.chaserMoveEveryFrames : difficulty.patrollerMoveEveryFrames,
       lastPathLength: null,
     }));
     this.exit = { ...this.map.exit, open: false };
@@ -175,11 +176,14 @@ export class GameEngine {
   }
 
   getState(): GameStateSnapshot {
+    const difficulty = getDifficultyProfile(this.level);
     return cloneJson({
       ...this.getEntities(),
       seed: this.seed,
       level: this.level,
       nextLevelSeed: levelSeed(this.level + 1),
+      difficultyName: difficulty.name,
+      difficultyRank: difficulty.rank,
       frame: this.frame,
       timeRemaining: roundTime(this.getTimeRemaining()),
       lives: this.player.lives,
@@ -315,6 +319,59 @@ export class GameEngine {
 
 export function levelSeed(level: number): string {
   return `courier-level-${String(Math.max(1, Math.floor(level))).padStart(3, "0")}`;
+}
+
+interface DifficultyProfile {
+  name: string;
+  rank: number;
+  enemyCount: number;
+  chaserAlertRange: number;
+  chaserMoveEveryFrames: number;
+  patrollerMoveEveryFrames: number;
+}
+
+export function getDifficultyProfile(level: number): DifficultyProfile {
+  const normalizedLevel = Math.max(1, Math.floor(level));
+  if (normalizedLevel === 1) {
+    return {
+      name: "入门",
+      rank: 1,
+      enemyCount: 2,
+      chaserAlertRange: 4,
+      chaserMoveEveryFrames: 26,
+      patrollerMoveEveryFrames: 32,
+    };
+  }
+  if (normalizedLevel === 2) {
+    return {
+      name: "普通",
+      rank: 2,
+      enemyCount: 3,
+      chaserAlertRange: 5,
+      chaserMoveEveryFrames: 22,
+      patrollerMoveEveryFrames: 28,
+    };
+  }
+  if (normalizedLevel === 3) {
+    return {
+      name: "紧张",
+      rank: 3,
+      enemyCount: 4,
+      chaserAlertRange: 6,
+      chaserMoveEveryFrames: 18,
+      patrollerMoveEveryFrames: 24,
+    };
+  }
+
+  const extra = normalizedLevel - 3;
+  return {
+    name: "危险",
+    rank: Math.min(9, 3 + extra),
+    enemyCount: 4,
+    chaserAlertRange: Math.min(9, 6 + Math.floor(extra / 2)),
+    chaserMoveEveryFrames: Math.max(10, 18 - extra * 2),
+    patrollerMoveEveryFrames: Math.max(14, 24 - extra * 2),
+  };
 }
 
 function directionBetween(from: { x: number; y: number }, to: { x: number; y: number }): Direction | null {

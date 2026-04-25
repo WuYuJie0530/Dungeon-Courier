@@ -81,6 +81,25 @@ test("winning a level unlocks the next level flow", async ({ page }) => {
   await expect(page.locator("#levelHud")).toContainText(`第 ${nextState.level} 关`);
 });
 
+test("early levels ramp difficulty instead of starting at full pressure", async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const api = window.__GAME_TEST_API__;
+    api.restart("level-ramp-one");
+    const levelOne = api.getState();
+    api.nextLevel();
+    const levelTwo = api.getState();
+    api.nextLevel();
+    const levelThree = api.getState();
+    return { levelOne, levelTwo, levelThree };
+  });
+
+  expect(result.levelOne.difficultyName).toBe("入门");
+  expect(result.levelOne.enemies).toHaveLength(2);
+  expect(result.levelTwo.enemies.length).toBeGreaterThan(result.levelOne.enemies.length);
+  expect(result.levelThree.difficultyRank).toBeGreaterThan(result.levelOne.difficultyRank);
+  await expect(page.locator("#difficultyHud")).toContainText(result.levelThree.difficultyName);
+});
+
 test("exit is locked before every letter is collected", async ({ page }) => {
   const result = await page.evaluate(() => {
     const api = window.__GAME_TEST_API__;
