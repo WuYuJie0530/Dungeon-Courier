@@ -67,7 +67,18 @@ test("scripted browser route collects all letters and wins", async ({ page }) =>
   const state = await runScriptedWin(page, "browser-win");
   expect(state.status).toBe("won");
   expect(state.collectedLetters).toBe(state.totalLetters);
-  await expect(page.locator("#resultTitle")).toContainText("派送完成");
+  await expect(page.locator("#resultTitle")).toContainText("关卡完成");
+});
+
+test("winning a level unlocks the next level flow", async ({ page }) => {
+  const wonState = await runScriptedWin(page, "browser-level-flow");
+  expect(wonState.status).toBe("won");
+  await page.click("#overlayRestartButton");
+  const nextState = await page.evaluate(() => window.__GAME_TEST_API__.getState());
+  expect(nextState.status).toBe("playing");
+  expect(nextState.level).toBe(wonState.level + 1);
+  expect(nextState.seed).not.toBe(wonState.seed);
+  await expect(page.locator("#levelHud")).toContainText(`第 ${nextState.level} 关`);
 });
 
 test("exit is locked before every letter is collected", async ({ page }) => {

@@ -83,7 +83,7 @@
           <canvas id="gameCanvas" width="960" height="624"></canvas>
           <div id="resultOverlay" class="result-overlay" hidden>
             <p id="resultTitle"></p>
-            <button id="overlayRestartButton" type="button">重新开始</button>
+            <button id="overlayRestartButton" type="button">进入下一关</button>
           </div>
         </section>
 
@@ -105,14 +105,14 @@
           </section>
 
           <section class="info-panel restart-panel">
-            <label for="seedInput">地图种子</label>
-            <input id="seedInput" aria-label="地图种子" value="courier-001" />
+            <h2>关卡进度</h2>
+            <div id="levelHud" class="level-badge">第 1 关</div>
             <div class="status-grid">
               <span>追踪者</span><strong id="chaserCount">0</strong>
               <span>巡逻者</span><strong id="patrollerCount">0</strong>
-              <span>当前种子</span><strong id="seedHud">courier-001</strong>
+              <span>通关条件</span><strong>全信件</strong>
             </div>
-            <button id="restartButton" type="button">重新开始</button>
+            <button id="restartButton" type="button">重新开始本关</button>
           </section>
         </aside>
       </main>

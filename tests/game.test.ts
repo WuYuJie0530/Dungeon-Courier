@@ -160,4 +160,16 @@ describe("Dungeon Courier engine", () => {
     expect(state.lives).toBe(3);
     expect(state.player).toMatchObject(engine.getMap().spawn);
   });
+
+  it("advances to a clean next level with a new generated seed", () => {
+    const engine = new GameEngine();
+    const first = engine.getState();
+    const next = engine.nextLevel();
+    expect(next.level).toBe(first.level + 1);
+    expect(next.seed).not.toBe(first.seed);
+    expect(next.status).toBe("playing");
+    expect(next.frame).toBe(0);
+    expect(next.collectedLetters).toBe(0);
+    expect(next.player).toMatchObject(engine.getMap().spawn);
+  });
 });

@@ -159,7 +159,8 @@ input {
 
 .hud-card p,
 .info-panel h2,
-.restart-panel label {
+.restart-panel label,
+.restart-panel h2 {
   margin: 0;
   color: #dce8ea;
   font-size: 0.95rem;
@@ -554,7 +555,8 @@ canvas {
 
 .objective-panel h2,
 .legend-panel h2,
-.restart-panel label {
+.restart-panel label,
+.restart-panel h2 {
   color: var(--cyan);
 }
 
@@ -630,6 +632,21 @@ canvas {
 .restart-panel {
   display: grid;
   gap: 0.55rem;
+}
+
+.level-badge {
+  min-height: 3.2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--cyan-dim);
+  border-radius: 4px;
+  color: #f6fbff;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(17, 244, 238, 0.2), transparent 58%),
+    rgba(1, 11, 15, 0.85);
+  font-size: 1.35rem;
+  font-weight: 900;
+  text-shadow: 0 0 14px rgba(17, 244, 238, 0.45);
 }
 
 .restart-panel button {

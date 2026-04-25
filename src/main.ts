@@ -1,13 +1,18 @@
 import { GameEngine } from "./game";
 import { Renderer } from "./render";
 import { installTestApi } from "./testApi";
-import { DASH_COOLDOWN_FRAMES, PLAYER_START_LIVES, TIME_LIMIT_SECONDS, type Direction, type GameStateSnapshot } from "./types";
+import {
+  DASH_COOLDOWN_FRAMES,
+  PLAYER_START_LIVES,
+  TIME_LIMIT_SECONDS,
+  type Direction,
+  type GameStateSnapshot,
+} from "./types";
 import "./style.css";
 
-const engine = new GameEngine("courier-001");
+const engine = new GameEngine();
 const canvas = requiredElement<HTMLCanvasElement>("gameCanvas");
 const renderer = new Renderer(canvas);
-const seedInput = requiredElement<HTMLInputElement>("seedInput");
 const pauseButton = requiredElement<HTMLButtonElement>("pauseButton");
 const restartButton = requiredElement<HTMLButtonElement>("restartButton");
 const overlayRestartButton = requiredElement<HTMLButtonElement>("overlayRestartButton");
@@ -19,7 +24,7 @@ const hud = {
   letters: requiredElement<HTMLSpanElement>("lettersHud"),
   dash: requiredElement<HTMLSpanElement>("dashHud"),
   pause: requiredElement<HTMLSpanElement>("pauseHud"),
-  seed: requiredElement<HTMLElement>("seedHud"),
+  level: requiredElement<HTMLElement>("levelHud"),
   objective: requiredElement<HTMLElement>("objectiveText"),
   chasers: requiredElement<HTMLElement>("chaserCount"),
   patrollers: requiredElement<HTMLElement>("patrollerCount"),
@@ -42,12 +47,16 @@ installTestApi(
 );
 
 restartButton.addEventListener("click", () => {
-  engine.restart(seedInput.value.trim() || "courier-001");
+  engine.restartLevel();
   renderNow();
 });
 
 overlayRestartButton.addEventListener("click", () => {
-  engine.restart(seedInput.value.trim() || engine.getState().seed);
+  if (engine.getState().status === "won") {
+    engine.nextLevel();
+  } else {
+    engine.restartLevel();
+  }
   renderNow();
 });
 
@@ -83,7 +92,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (event.key.toLowerCase() === "r") {
-    engine.restart(seedInput.value.trim() || engine.getState().seed);
+    engine.restartLevel();
     renderNow();
   }
 });
@@ -119,20 +128,21 @@ function updateHud(state: GameStateSnapshot): void {
   hud.letters.textContent = `${pad2(state.collectedLetters)} / ${pad2(state.totalLetters)}`;
   hud.dash.replaceChildren(...createDashMeter(state.dashCooldownFrames));
   hud.pause.textContent = statusLabel(state.status);
-  hud.seed.textContent = state.seed;
+  hud.level.textContent = `第 ${state.level} 关`;
   hud.chasers.textContent = String(chasers);
   hud.patrollers.textContent = String(patrollers);
   hud.objective.textContent =
     state.status === "won"
-      ? "全部信件已送达，出口路线完成。"
+      ? `第 ${state.level} 关完成。进入下一关继续派送。`
       : state.status === "lost"
-        ? "这次派送失败了。重新开始再试一次。"
+        ? "本关失败。重新开始当前关卡。"
         : state.exit.open
           ? "出口已经开启，立刻撤离。"
           : "收集所有信件，然后抵达出口。";
   pauseButton.classList.toggle("is-playing", state.status === "paused");
   resultOverlay.hidden = state.status !== "won" && state.status !== "lost";
-  resultTitle.textContent = state.status === "won" ? "派送完成" : "信使倒下";
+  resultTitle.textContent = state.status === "won" ? "关卡完成" : "信使倒下";
+  overlayRestartButton.textContent = state.status === "won" ? "进入下一关" : "重新开始本关";
 }
 
 function createLifePips(lives: number): HTMLElement[] {
@@ -174,7 +184,7 @@ function statusLabel(status: GameStateSnapshot["status"]): string {
     case "paused":
       return "已暂停";
     case "won":
-      return "已完成";
+      return "关卡完成";
     case "lost":
       return "失败";
     default:

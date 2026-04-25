@@ -79,6 +79,8 @@ export interface EntitySnapshot {
 
 export interface GameStateSnapshot extends EntitySnapshot {
   seed: string;
+  level: number;
+  nextLevelSeed: string;
   frame: number;
   timeRemaining: number;
   lives: number;
@@ -96,6 +98,7 @@ export interface GameTestApi {
   step(frames: number): GameStateSnapshot;
   movePlayer(direction: Direction): GameStateSnapshot;
   dash(direction: Direction): GameStateSnapshot;
+  nextLevel(): GameStateSnapshot;
   getMap(): MapData;
   getEntities(): EntitySnapshot;
   pause(): GameStateSnapshot;

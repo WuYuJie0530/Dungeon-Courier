@@ -22,6 +22,7 @@ export function installTestApi(engine: GameEngine, enterTestMode: () => void, af
     movePlayer: (direction) =>
       withState(() => (isDirection(direction) ? engine.movePlayer(direction) : engine.getState())),
     dash: (direction) => withState(() => (isDirection(direction) ? engine.dash(direction) : engine.getState())),
+    nextLevel: () => withState(() => engine.nextLevel()),
     getMap: () => {
       enterTestMode();
       return engine.getMap();

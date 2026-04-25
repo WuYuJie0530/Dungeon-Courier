@@ -29,6 +29,7 @@ import {
 } from "./types";
 
 export class GameEngine {
+  private level: number;
   private seed: string;
   private nextSeed: string;
   private map: MapData;
@@ -40,7 +41,8 @@ export class GameEngine {
   private status: GameStatus;
   private collectedLetters: number;
 
-  constructor(seed = "courier-001") {
+  constructor(seed = levelSeed(1)) {
+    this.level = 1;
     this.seed = seed;
     this.nextSeed = seed;
     this.map = generateDungeon(seed);
@@ -84,6 +86,17 @@ export class GameEngine {
     this.status = "playing";
     this.collectedLetters = 0;
     return this.getState();
+  }
+
+  restartLevel(): GameStateSnapshot {
+    this.nextSeed = this.seed;
+    return this.restart(this.seed);
+  }
+
+  nextLevel(): GameStateSnapshot {
+    this.level += 1;
+    this.nextSeed = levelSeed(this.level);
+    return this.restart(this.nextSeed);
   }
 
   pause(): GameStateSnapshot {
@@ -165,6 +178,8 @@ export class GameEngine {
     return cloneJson({
       ...this.getEntities(),
       seed: this.seed,
+      level: this.level,
+      nextLevelSeed: levelSeed(this.level + 1),
       frame: this.frame,
       timeRemaining: roundTime(this.getTimeRemaining()),
       lives: this.player.lives,
@@ -296,6 +311,10 @@ export class GameEngine {
   private getTimeRemaining(): number {
     return Math.max(0, TIME_LIMIT_SECONDS - this.frame / FPS);
   }
+}
+
+export function levelSeed(level: number): string {
+  return `courier-level-${String(Math.max(1, Math.floor(level))).padStart(3, "0")}`;
 }
 
 function directionBetween(from: { x: number; y: number }, to: { x: number; y: number }): Direction | null {
