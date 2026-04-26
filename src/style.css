@@ -854,11 +854,289 @@ canvas {
   color: #ffe27a;
 }
 
-.level-failed .celebration-emblem,
-.level-failed .celebration-effects,
-.level-failed .result-stats,
+.game-shell.is-failed-state {
+  --cyan: #ff4141;
+  --cyan-soft: rgba(255, 65, 65, 0.62);
+  --cyan-dim: rgba(255, 65, 65, 0.22);
+  --gold: #ff5b49;
+  --gold-soft: rgba(255, 88, 72, 0.58);
+  --panel: rgba(20, 4, 5, 0.9);
+  --panel-dark: rgba(8, 1, 2, 0.97);
+}
+
+.game-shell.is-failed-state::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 45, 45, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 45, 45, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 50% 28%, rgba(255, 31, 31, 0.18), transparent 34%);
+  background-size: 24px 24px, 24px 24px, auto;
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+
+.game-shell.is-failed-state .hud-card,
+.game-shell.is-failed-state .info-panel,
+.game-shell.is-failed-state .canvas-panel {
+  border-color: rgba(255, 55, 55, 0.72);
+  background:
+    linear-gradient(135deg, rgba(255, 49, 49, 0.12), transparent 22%, transparent 76%, rgba(255, 128, 72, 0.08)),
+    radial-gradient(circle at 10% 0%, rgba(255, 42, 42, 0.15), transparent 38%),
+    linear-gradient(180deg, rgba(20, 4, 5, 0.92), rgba(6, 1, 2, 0.97));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    inset 0 0 34px rgba(255, 35, 35, 0.055),
+    0 0 20px rgba(255, 35, 35, 0.2),
+    0 18px 42px rgba(0, 0, 0, 0.5);
+}
+
+.game-shell.is-failed-state .hud-card p,
+.game-shell.is-failed-state .info-panel h2,
+.game-shell.is-failed-state .restart-panel h2,
+.game-shell.is-failed-state .pause-card p,
+.game-shell.is-failed-state .dash-text,
+.game-shell.is-failed-state #difficultyHud {
+  color: #ff5757;
+  text-shadow: 0 0 14px rgba(255, 42, 42, 0.48);
+}
+
+.game-shell.is-failed-state .hud-card strong,
+.game-shell.is-failed-state .status-grid strong,
+.game-shell.is-failed-state .level-badge-copy strong {
+  color: #ffd2ca;
+  text-shadow: 0 0 15px rgba(255, 54, 54, 0.42);
+}
+
+.game-shell.is-failed-state .clock-symbol {
+  border-color: #ff4747;
+}
+
+.game-shell.is-failed-state .clock-symbol::before,
+.game-shell.is-failed-state .clock-symbol::after,
+.game-shell.is-failed-state .dash-cell.ready {
+  background: #ff4747;
+  border-color: #ff7770;
+  box-shadow: 0 0 14px rgba(255, 55, 55, 0.65);
+}
+
+.game-shell.is-failed-state .letter-symbol,
+.game-shell.is-failed-state .letter-legend {
+  border-color: #ffb15f;
+  box-shadow: 0 0 18px rgba(255, 94, 55, 0.5);
+}
+
+.game-shell.is-failed-state .pause-control,
+.game-shell.is-failed-state .restart-panel button,
+.game-shell.is-failed-state button.level-badge {
+  border-color: rgba(255, 70, 70, 0.72);
+  color: #ffd1c8;
+  background:
+    linear-gradient(135deg, rgba(255, 67, 45, 0.26), transparent 26%),
+    linear-gradient(180deg, rgba(32, 11, 12, 0.98), rgba(9, 2, 3, 0.99));
+  box-shadow: 0 0 22px rgba(255, 44, 44, 0.24);
+}
+
+.level-failed.result-overlay {
+  background:
+    linear-gradient(rgba(255, 53, 53, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 53, 53, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 50% 28%, rgba(255, 38, 38, 0.24), transparent 24%),
+    radial-gradient(circle at 18% 15%, rgba(255, 92, 48, 0.16), transparent 20%),
+    rgba(6, 0, 1, 0.86);
+  background-size: 22px 22px, 22px 22px, auto, auto, auto;
+}
+
+.level-failed.result-overlay::before,
+.level-failed.result-overlay::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.level-failed.result-overlay::before {
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(255, 61, 49, 0.07) 12px, transparent 13px),
+    linear-gradient(105deg, transparent 0 8%, rgba(255, 62, 55, 0.26) 8.2% 8.45%, transparent 8.7% 100%),
+    linear-gradient(152deg, transparent 0 79%, rgba(255, 62, 55, 0.25) 79.2% 79.55%, transparent 79.8% 100%);
+  opacity: 0.75;
+}
+
+.level-failed.result-overlay::after {
+  inset: 12% 8%;
+  border: 1px solid rgba(255, 58, 58, 0.34);
+  box-shadow:
+    inset 0 0 48px rgba(255, 36, 36, 0.12),
+    0 0 36px rgba(255, 38, 38, 0.22);
+}
+
+.level-failed .result-card {
+  width: min(720px, 86%);
+  border-color: #ff4444;
+  background:
+    linear-gradient(90deg, transparent 0 8%, rgba(255, 57, 48, 0.18) 8.2% 8.6%, transparent 8.8%),
+    linear-gradient(180deg, rgba(255, 67, 48, 0.12), transparent 28%, rgba(255, 67, 48, 0.08)),
+    radial-gradient(circle at 50% 18%, rgba(255, 54, 54, 0.22), transparent 34%),
+    rgba(9, 2, 3, 0.94);
+  box-shadow:
+    0 0 54px rgba(255, 39, 39, 0.42),
+    inset 0 0 48px rgba(255, 36, 36, 0.11),
+    0 28px 90px rgba(0, 0, 0, 0.78);
+}
+
+.level-failed .result-card::before {
+  border-color: rgba(255, 76, 76, 0.38);
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 70, 52, 0.2) 0 8px, transparent 8px 18px) top center / 72% 0.75rem no-repeat;
+}
+
+.level-failed .result-card::after {
+  border-color: rgba(255, 90, 74, 0.2);
+  filter: blur(2px);
+}
+
+.level-failed .celebration-effects {
+  opacity: 1;
+}
+
+.level-failed .celebration-effects::before,
+.level-failed .celebration-effects::after,
+.level-failed .celebration-effects span {
+  display: none;
+}
+
+.level-failed .celebration-effects i {
+  width: 0.35rem;
+  height: 1.15rem;
+  border-radius: 99px;
+  background: #ff3d2f !important;
+  box-shadow: 0 0 16px rgba(255, 67, 47, 0.75);
+  animation: failure-spark 1700ms ease-in-out infinite;
+}
+
+.level-failed .celebration-emblem {
+  width: clamp(5.3rem, 6.5vw, 6.9rem);
+  height: clamp(4.4rem, 5.4vw, 5.7rem);
+}
+
+.level-failed .crown-mark {
+  display: none;
+}
+
+.level-failed .medal-letter {
+  width: clamp(4.8rem, 6vw, 6.2rem);
+  height: clamp(4.2rem, 5.3vw, 5.4rem);
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 88%, 0 88%);
+  background:
+    radial-gradient(circle at 50% 62%, rgba(255, 246, 219, 0.94) 0 9%, transparent 10%),
+    linear-gradient(180deg, rgba(255, 90, 82, 0.35), rgba(91, 4, 5, 0.95));
+  box-shadow:
+    0 0 36px rgba(255, 51, 51, 0.72),
+    inset 0 0 24px rgba(255, 255, 255, 0.14);
+}
+
+.level-failed .medal-letter::before {
+  content: "!";
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: #fff4ed;
+  font-size: clamp(2.4rem, 4vw, 4rem);
+  font-weight: 900;
+  line-height: 1;
+  transform: none;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.7);
+}
+
+.level-failed #resultTitle {
+  color: #fff7ef;
+  font-size: clamp(3rem, 5.6vw, 5.7rem);
+  letter-spacing: 0;
+  text-shadow:
+    0.05em 0 rgba(255, 35, 35, 0.9),
+    -0.035em 0 rgba(17, 244, 238, 0.28),
+    0 0 26px rgba(255, 43, 43, 0.72),
+    0 6px 22px #000;
+  filter: drop-shadow(0 0 10px rgba(255, 69, 69, 0.4));
+}
+
+.level-failed .result-subtitle {
+  color: #ff4f4f !important;
+  font-size: clamp(1rem, 1.45vw, 1.35rem) !important;
+  text-shadow: 0 0 18px rgba(255, 49, 49, 0.65) !important;
+}
+
+.level-failed .result-stats {
+  border-color: rgba(255, 80, 72, 0.3);
+  background: rgba(7, 1, 2, 0.72);
+}
+
+.level-failed .result-stats div {
+  border-right-color: rgba(255, 80, 72, 0.22);
+}
+
+.level-failed .result-stats span {
+  color: #c8b5b2;
+}
+
+.level-failed .result-stats strong {
+  color: #ff5a55;
+  text-shadow: 0 0 16px rgba(255, 43, 43, 0.56);
+}
+
 .level-failed .result-praise {
-  opacity: 0.7;
+  color: #ff6b5d !important;
+  font-size: clamp(0.92rem, 1.13vw, 1.08rem) !important;
+  text-shadow: 0 0 15px rgba(255, 58, 42, 0.46);
+}
+
+.level-failed .result-actions {
+  width: min(520px, 100%);
+  grid-template-columns: 1fr 1.55fr;
+}
+
+.level-failed .result-actions button {
+  border-color: rgba(255, 111, 101, 0.72);
+  color: #ffe1dc;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(47, 19, 20, 0.95), rgba(14, 4, 5, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 26px rgba(255, 42, 42, 0.22);
+}
+
+.level-failed .primary-result-action {
+  color: #fff0e8;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12), transparent 16%, transparent 84%, rgba(255, 255, 255, 0.1)),
+    linear-gradient(180deg, rgba(206, 35, 20, 0.96), rgba(83, 8, 8, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 222, 210, 0.18),
+    0 0 34px rgba(255, 50, 37, 0.5);
+}
+
+@keyframes failure-spark {
+  0% {
+    translate: 0 -0.4rem;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    translate: 0 2.2rem;
+    opacity: 0;
+  }
 }
 
 .objective-panel {

@@ -12,6 +12,7 @@ import {
 import "./style.css";
 
 const engine = new GameEngine();
+const appShell = requiredElement<HTMLDivElement>("app");
 const canvas = requiredElement<HTMLCanvasElement>("gameCanvas");
 const renderer = new Renderer(canvas);
 const pauseButton = requiredElement<HTMLButtonElement>("pauseButton");
@@ -181,13 +182,14 @@ function updateHud(state: GameStateSnapshot): void {
   hud.difficulty.textContent = state.difficultyName;
   hud.chasers.textContent = String(chasers);
   hud.patrollers.textContent = String(patrollers);
+  appShell.classList.toggle("is-failed-state", state.status === "lost");
   hud.objective.textContent =
     state.status === "completed"
       ? "五关任务全部完成，地牢邮路已打通。"
       : state.status === "won"
         ? `第 ${state.level} 关完成。进入下一关继续派送。`
       : state.status === "lost"
-        ? "本关失败。重新开始当前关卡。"
+        ? "本关失败。复盘路线，重新突破。"
         : state.exit.open
           ? "出口已经开启，立刻撤离。"
           : "收集所有信件，然后抵达出口。";
@@ -256,22 +258,22 @@ function updateResultOverlay(state: GameStateSnapshot): void {
 
   resultOverlay.classList.toggle("campaign-complete", completedCampaign);
   resultOverlay.classList.toggle("level-failed", failedLevel);
-  resultTitle.textContent = completedCampaign ? "任务完成" : wonLevel ? "关卡完成" : "信使倒下";
+  resultTitle.textContent = completedCampaign ? "任务完成" : wonLevel ? "关卡完成" : "任务失败";
   resultSubtitle.textContent = completedCampaign
     ? "信件已全部送达，成功脱出！"
     : wonLevel
       ? `第 ${state.level} 关完成，下一关难度将提升。`
-      : "本关失败，调整路线后再试一次。";
+      : "行动失败，潜入暴露，目标未达成。";
   resultLevel.textContent = `${Math.min(state.level, MAX_LEVEL)} / ${MAX_LEVEL}`;
   resultTime.textContent = formatClock(state.timeRemaining);
   resultLetters.textContent = `${pad2(state.collectedLetters)} / ${pad2(state.totalLetters)}`;
   resultLives.textContent = String(state.lives);
-  resultGrade.textContent = failedLevel ? "-" : grade;
+  resultGrade.textContent = failedLevel ? "F" : grade;
   resultPraise.textContent = completedCampaign
     ? "完美潜入，表现出色！"
     : wonLevel
       ? "路线清晰，继续保持。"
-      : "别急，第一封信总是最难送的。";
+      : "别急，失败乃潜行之常态。复盘路线，再次尝试突破。";
   overlayRetryButton.textContent = failedLevel ? "再次挑战" : "重玩本关";
   overlayRestartButton.textContent = completedCampaign ? "重新挑战五关" : wonLevel ? "进入下一关" : "重新开始本关";
   campaignRestartButton.hidden = failedLevel;

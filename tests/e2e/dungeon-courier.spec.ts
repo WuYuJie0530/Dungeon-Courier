@@ -167,6 +167,22 @@ test("exit is locked before every letter is collected", async ({ page }) => {
   expect(result.exit.open).toBe(false);
 });
 
+test("failure state uses the red mission failure results screen", async ({ page }) => {
+  await page.evaluate(() => {
+    const api = window.__GAME_TEST_API__;
+    api.restart("browser-failure-screen");
+    api.step(90 * 60 + 4);
+  });
+
+  await expect(page.locator("#resultOverlay")).toBeVisible();
+  await expect(page.locator("#app")).toHaveClass(/is-failed-state/);
+  await expect(page.locator("#resultOverlay")).toHaveClass(/level-failed/);
+  await expect(page.locator("#resultTitle")).toContainText("任务失败");
+  await expect(page.locator("#resultSubtitle")).toContainText("行动失败");
+  await expect(page.locator("#resultGrade")).toContainText("F");
+  await expect(page.locator("#overlayRestartButton")).toContainText("重新开始本关");
+});
+
 test("pause button freezes step-driven simulation", async ({ page }) => {
   await page.evaluate(() => window.__GAME_TEST_API__.restart("browser-pause"));
   await page.click("#pauseButton");
