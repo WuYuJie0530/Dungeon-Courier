@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dungeon Courier</title>
+    <script type="module" crossorigin src="/Dungeon-Courier-/assets/index-jZ41piOJ.js"></script>
+    <link rel="stylesheet" crossorigin href="/Dungeon-Courier-/assets/index-DPVduIOP.css">
+  </head>
+  <body>
+    <div id="app" class="game-shell">
+      <header class="hudbar" aria-label="游戏状态">
+        <section class="hud-card lives-card">
+          <div class="hud-symbol heart-symbol" aria-hidden="true"></div>
+          <div>
+            <p>生命</p>
+            <div id="livesHud" class="life-pips" aria-live="polite"></div>
+          </div>
+        </section>
+        <section class="hud-card">
+          <div class="hud-symbol clock-symbol" aria-hidden="true"></div>
+          <div>
+            <p>剩余时间</p>
+            <strong id="timerHud">01:30</strong>
+          </div>
+        </section>
+        <section class="hud-card">
+          <div class="hud-symbol letter-symbol" aria-hidden="true"></div>
+          <div>
+            <p>已收集信件</p>
+            <strong id="lettersHud">00 / 03</strong>
+          </div>
+        </section>
+        <section class="hud-card">
+          <div class="hud-symbol dash-symbol" aria-hidden="true"></div>
+          <div>
+            <p>冲刺能量</p>
+            <div id="dashHud" class="dash-meter" aria-live="polite"></div>
+          </div>
+        </section>
+        <section class="hud-card pause-card">
+          <button id="pauseButton" class="pause-control" type="button" aria-label="暂停或继续">
+            <span></span><span></span>
+          </button>
+          <div>
+            <p id="pauseHud">进行中</p>
+            <small>按 P 暂停 / 继续</small>
+          </div>
+        </section>
+      </header>
+
+      <main class="dungeon-layout">
+        <aside class="side-rail left-rail" aria-label="敌人与操作">
+          <section class="info-panel intel-panel">
+            <h2>敌人情报</h2>
+            <div class="enemy-card">
+              <span class="enemy-avatar patrol-avatar" aria-hidden="true"></span>
+              <div>
+                <strong>巡逻者</strong>
+                <p>沿固定方向巡逻，遇到墙体后转向。</p>
+                <div class="enemy-route" aria-hidden="true"></div>
+              </div>
+            </div>
+            <div class="enemy-card">
+              <span class="enemy-avatar chaser-avatar" aria-hidden="true"></span>
+              <div>
+                <strong>追踪者</strong>
+                <p>进入视野后会追踪你，被其发现则失败风险上升。</p>
+                <div class="vision-cone" aria-hidden="true"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="info-panel controls-panel">
+            <h2>操作说明</h2>
+            <div class="control-row"><kbd>W A S D</kbd><span>移动</span></div>
+            <div class="control-row"><kbd>↑ ↓ ← →</kbd><span>移动</span></div>
+            <div class="control-row"><kbd>Shift</kbd><span>冲刺</span></div>
+            <div class="control-row"><kbd>P</kbd><span>暂停 / 继续</span></div>
+            <div class="control-row"><kbd>R</kbd><span>重开关卡</span></div>
+          </section>
+        </aside>
+
+        <section class="canvas-panel" aria-label="地牢地图">
+          <canvas id="gameCanvas" width="960" height="624"></canvas>
+          <div id="resultOverlay" class="result-overlay" hidden>
+            <div class="result-card">
+              <div class="celebration-effects" aria-hidden="true">
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="celebration-emblem" aria-hidden="true">
+                <span class="crown-mark"></span>
+                <span class="medal-letter"></span>
+              </div>
+              <p id="resultTitle"></p>
+              <p id="resultSubtitle" class="result-subtitle"></p>
+              <div class="result-stats" aria-label="通关数据">
+                <div>
+                  <span>关卡</span>
+                  <strong id="resultLevel">1 / 5</strong>
+                </div>
+                <div>
+                  <span>剩余时间</span>
+                  <strong id="resultTime">01:30</strong>
+                </div>
+                <div>
+                  <span>收集信件</span>
+                  <strong id="resultLetters">03 / 03</strong>
+                </div>
+                <div>
+                  <span>剩余生命</span>
+                  <strong id="resultLives">3</strong>
+                </div>
+                <div>
+                  <span>任务评价</span>
+                  <strong id="resultGrade">S</strong>
+                </div>
+              </div>
+              <p id="resultPraise" class="result-praise"></p>
+              <div class="result-actions">
+                <button id="overlayRetryButton" type="button">再次挑战</button>
+                <button id="overlayRestartButton" class="primary-result-action" type="button">进入下一关</button>
+                <button id="campaignRestartButton" type="button">返回第一关</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-rail right-rail" aria-label="目标与图例">
+          <section class="info-panel objective-panel">
+            <h2>目标</h2>
+            <p id="objectiveText">收集所有信件，然后抵达出口。</p>
+            <div class="exit-illustration" aria-hidden="true"></div>
+          </section>
+
+          <section class="info-panel legend-panel">
+            <h2>图例</h2>
+            <div><span class="legend-icon letter-legend"></span><span>信件</span></div>
+            <div><span class="legend-icon exit-legend"></span><span>出口</span></div>
+            <div><span class="legend-icon wall-legend"></span><span>墙体</span></div>
+            <div><span class="legend-icon chaser-legend"></span><span>追踪者</span></div>
+            <div><span class="legend-icon patrol-legend"></span><span>巡逻者</span></div>
+            <div><span class="legend-icon player-legend"></span><span>玩家</span></div>
+          </section>
+
+          <section class="info-panel restart-panel">
+            <h2>关卡进度</h2>
+            <div id="levelHud" class="level-badge">第 1 关</div>
+            <div class="status-grid">
+              <span>难度</span><strong id="difficultyHud">入门</strong>
+              <span>追踪者</span><strong id="chaserCount">0</strong>
+              <span>巡逻者</span><strong id="patrollerCount">0</strong>
+              <span>通关条件</span><strong>全信件</strong>
+            </div>
+            <button id="restartButton" type="button">重新开始本关</button>
+          </section>
+        </aside>
+      </main>
+    </div>
+  </body>
+</html>
