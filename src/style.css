@@ -286,8 +286,8 @@ input {
 .dash-symbol::after {
   content: "";
   position: absolute;
-  width: 3.2rem;
-  height: 0.7rem;
+  width: clamp(2.2rem, 3.1vw, 3.2rem);
+  height: clamp(0.48rem, 0.7vw, 0.7rem);
   border-radius: 99px;
   background: #18d5d0;
   box-shadow: 0 0 17px rgba(24, 213, 208, 0.62);
@@ -295,14 +295,14 @@ input {
 }
 
 .dash-symbol::before {
-  top: 1.15rem;
-  left: 0.2rem;
+  top: 32%;
+  left: 14%;
 }
 
 .dash-symbol::after {
-  top: 1.85rem;
-  left: -0.35rem;
-  width: 2.4rem;
+  top: 52%;
+  left: 0;
+  width: clamp(1.65rem, 2.4vw, 2.4rem);
 }
 
 .life-pips,
@@ -363,8 +363,8 @@ input {
 }
 
 .pause-control {
-  width: 4rem;
-  height: 4rem;
+  width: clamp(3rem, 4.1vw, 4rem);
+  height: clamp(3rem, 4.1vw, 4rem);
   display: flex;
   justify-content: center;
   gap: 0.45rem;
@@ -373,8 +373,8 @@ input {
 }
 
 .pause-control span {
-  width: 0.55rem;
-  height: 2.25rem;
+  width: clamp(0.42rem, 0.55vw, 0.55rem);
+  height: clamp(1.65rem, 2.25vw, 2.25rem);
   align-self: center;
   border-radius: 3px;
   background: #fff7e9;
@@ -383,9 +383,9 @@ input {
 .pause-control.is-playing span {
   width: 0;
   height: 0;
-  border-top: 1.08rem solid transparent;
-  border-bottom: 1.08rem solid transparent;
-  border-left: 1.55rem solid #fff7e9;
+  border-top: clamp(0.8rem, 1.08vw, 1.08rem) solid transparent;
+  border-bottom: clamp(0.8rem, 1.08vw, 1.08rem) solid transparent;
+  border-left: clamp(1.15rem, 1.55vw, 1.55rem) solid #fff7e9;
   border-radius: 0;
   background: transparent;
 }
@@ -415,7 +415,7 @@ input {
 }
 
 .right-rail {
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 0.78fr) minmax(0, 1fr) minmax(0, 0.92fr);
 }
 
 .info-panel {
@@ -853,6 +853,15 @@ canvas {
   text-align: center;
 }
 
+.right-rail .info-panel {
+  display: grid;
+  align-content: start;
+}
+
+.right-rail .info-panel h2 {
+  margin-bottom: clamp(0.35rem, 0.55svh, 0.7rem);
+}
+
 .objective-panel h2,
 .legend-panel h2,
 .restart-panel label,
@@ -861,10 +870,10 @@ canvas {
 }
 
 .exit-illustration {
-  width: 5.5rem;
-  height: 6.2rem;
-  margin: 0.75rem auto 0;
-  border: 6px solid #74522d;
+  width: clamp(3rem, 5vw, 5.1rem);
+  height: clamp(3.4rem, 5.6vw, 5.75rem);
+  margin: clamp(0.35rem, 0.55vw, 0.75rem) auto 0;
+  border: clamp(4px, 0.42vw, 6px) solid #74522d;
   border-bottom: 0;
   border-radius: 50% 50% 4px 4px;
   background:
@@ -877,25 +886,31 @@ canvas {
 
 .legend-panel {
   display: grid;
-  gap: 0.55rem;
+  gap: clamp(0.22rem, 0.48svh, 0.48rem);
 }
 
 .legend-panel div {
   display: grid;
-  grid-template-columns: 2.7rem 1fr;
+  grid-template-columns: clamp(1.85rem, 2.35vw, 2.45rem) 1fr;
   align-items: center;
-  gap: 0.65rem;
+  gap: clamp(0.45rem, 0.55vw, 0.65rem);
+  min-height: clamp(1.8rem, 3.3svh, 2.35rem);
 }
 
 .legend-icon {
-  width: 2.2rem;
-  height: 2.2rem;
+  width: clamp(1.45rem, 2.05vw, 2rem);
+  height: clamp(1.45rem, 2.05vw, 2rem);
   display: grid;
   place-items: center;
 }
 
+.letter-legend::before {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
 .exit-legend {
-  border: 4px solid #f3a629;
+  border: clamp(3px, 0.3vw, 4px) solid #f3a629;
   border-bottom: 0;
   border-radius: 50% 50% 3px 3px;
   background: #5a250b;
@@ -931,11 +946,11 @@ canvas {
 
 .restart-panel {
   display: grid;
-  gap: 0.55rem;
+  gap: clamp(0.22rem, 0.42svh, 0.5rem);
 }
 
 .level-badge {
-  min-height: 3.2rem;
+  min-height: clamp(2.25rem, 5.5svh, 3.2rem);
   display: grid;
   place-items: center;
   border: 1px solid var(--cyan-dim);
@@ -944,16 +959,16 @@ canvas {
   background:
     radial-gradient(circle at 50% 0%, rgba(17, 244, 238, 0.2), transparent 58%),
     rgba(1, 11, 15, 0.85);
-  font-size: 1.35rem;
+  font-size: clamp(1.05rem, 1.45vw, 1.35rem);
   font-weight: 900;
   text-shadow: 0 0 14px rgba(17, 244, 238, 0.45);
 }
 
 .restart-panel button {
-  min-height: 3.1rem;
-  margin-top: 0.35rem;
+  min-height: clamp(2.35rem, 5svh, 3.1rem);
+  margin-top: 0.15rem;
   color: #ffe27a;
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 1.3vw, 1.25rem);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),
     0 0 22px rgba(255, 215, 94, 0.22);
