@@ -31,6 +31,7 @@ import {
 
 export class GameEngine {
   private level: number;
+  private unlockedLevel: number;
   private seed: string;
   private nextSeed: string;
   private map: MapData;
@@ -44,6 +45,7 @@ export class GameEngine {
 
   constructor(seed = levelSeed(1)) {
     this.level = 1;
+    this.unlockedLevel = 1;
     this.seed = seed;
     this.nextSeed = seed;
     this.map = generateDungeon(seed);
@@ -100,6 +102,17 @@ export class GameEngine {
       return this.getState();
     }
     this.level += 1;
+    this.unlockedLevel = Math.max(this.unlockedLevel, this.level);
+    this.nextSeed = levelSeed(this.level);
+    return this.restart(this.nextSeed);
+  }
+
+  selectLevel(level: number): GameStateSnapshot {
+    const targetLevel = Math.floor(level);
+    if (targetLevel < 1 || targetLevel > this.unlockedLevel || targetLevel > MAX_LEVEL) {
+      return this.getState();
+    }
+    this.level = targetLevel;
     this.nextSeed = levelSeed(this.level);
     return this.restart(this.nextSeed);
   }
@@ -192,6 +205,7 @@ export class GameEngine {
       seed: this.seed,
       level: this.level,
       maxLevel: MAX_LEVEL,
+      unlockedLevel: this.unlockedLevel,
       nextLevelSeed: levelSeed(this.level + 1),
       campaignCompleted: this.status === "completed",
       difficultyName: difficulty.name,
@@ -305,6 +319,7 @@ export class GameEngine {
   private checkExit(): void {
     if (samePoint(this.player, this.exit) && this.exit.open) {
       this.status = this.level >= MAX_LEVEL ? "completed" : "won";
+      this.unlockedLevel = Math.max(this.unlockedLevel, Math.min(MAX_LEVEL, this.level + 1));
     }
   }
 

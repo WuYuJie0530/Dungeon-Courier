@@ -82,6 +82,7 @@ export interface GameStateSnapshot extends EntitySnapshot {
   seed: string;
   level: number;
   maxLevel: number;
+  unlockedLevel: number;
   nextLevelSeed: string;
   campaignCompleted: boolean;
   difficultyName: string;
@@ -104,6 +105,7 @@ export interface GameTestApi {
   movePlayer(direction: Direction): GameStateSnapshot;
   dash(direction: Direction): GameStateSnapshot;
   nextLevel(): GameStateSnapshot;
+  selectLevel(level: number): GameStateSnapshot;
   restartCampaign(): GameStateSnapshot;
   getMap(): MapData;
   getEntities(): EntitySnapshot;

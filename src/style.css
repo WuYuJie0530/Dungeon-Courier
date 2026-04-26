@@ -77,6 +77,7 @@ input {
 }
 
 .game-shell {
+  position: relative;
   width: min(var(--stage-width), calc(100vw - 24px), calc((100svh - 18px) * var(--stage-aspect)));
   height: 100vh;
   height: 100svh;
@@ -970,9 +971,136 @@ canvas {
   background:
     radial-gradient(circle at 50% 0%, rgba(17, 244, 238, 0.2), transparent 58%),
     rgba(1, 11, 15, 0.85);
+  padding: 0.25rem 0.55rem;
   font-size: clamp(1.05rem, 1.45vw, 1.35rem);
   font-weight: 900;
   text-shadow: 0 0 14px rgba(17, 244, 238, 0.45);
+}
+
+button.level-badge {
+  cursor: pointer;
+}
+
+button.level-badge:hover,
+button.level-badge:focus-visible {
+  border-color: var(--cyan);
+  color: #ffffff;
+  box-shadow:
+    inset 0 0 18px rgba(17, 244, 238, 0.14),
+    0 0 24px rgba(17, 244, 238, 0.28);
+}
+
+.level-select-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 2vw, 2rem);
+  background: rgba(0, 5, 8, 0.64);
+  backdrop-filter: blur(2px);
+  z-index: 5;
+}
+
+.level-select-overlay[hidden] {
+  display: none;
+}
+
+.level-select-card {
+  width: min(520px, 94%);
+  border: 1px solid var(--cyan);
+  border-radius: 6px;
+  padding: clamp(1rem, 1.5vw, 1.4rem);
+  background:
+    linear-gradient(135deg, rgba(17, 244, 238, 0.12), transparent 24%, transparent 74%, rgba(255, 215, 94, 0.1)),
+    rgba(1, 11, 15, 0.96);
+  box-shadow:
+    0 0 38px rgba(17, 244, 238, 0.34),
+    inset 0 0 28px rgba(17, 244, 238, 0.08),
+    0 22px 80px rgba(0, 0, 0, 0.72);
+}
+
+.level-select-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.level-select-head p,
+.level-select-head strong {
+  margin: 0;
+}
+
+.level-select-head p {
+  color: var(--cyan);
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-shadow: 0 0 14px rgba(17, 244, 238, 0.42);
+}
+
+.level-select-head strong {
+  display: block;
+  margin-top: 0.18rem;
+  color: #fff2d5;
+  font-size: 1.25rem;
+}
+
+.level-select-close {
+  width: 2.3rem;
+  min-height: 2.3rem;
+  padding: 0;
+  color: #fff2d5;
+  font-size: 1.35rem;
+}
+
+.level-select-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.level-choice {
+  min-height: 4.6rem;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.22rem;
+  padding: 0.65rem 0.35rem;
+  border-color: rgba(17, 244, 238, 0.34);
+  color: #eaffff;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(17, 244, 238, 0.2), transparent 58%),
+    linear-gradient(180deg, rgba(6, 27, 31, 0.96), rgba(2, 9, 12, 0.98));
+}
+
+.level-choice span {
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.level-choice small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.level-choice[aria-current="true"] {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow:
+    inset 0 0 18px rgba(255, 215, 94, 0.15),
+    0 0 24px rgba(255, 215, 94, 0.24);
+}
+
+.level-choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  border-color: rgba(115, 132, 137, 0.28);
+  color: #7f9196;
+  background:
+    linear-gradient(180deg, rgba(18, 24, 27, 0.82), rgba(5, 8, 10, 0.92));
+  box-shadow: none;
 }
 
 .restart-panel button {

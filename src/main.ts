@@ -19,6 +19,11 @@ const restartButton = requiredElement<HTMLButtonElement>("restartButton");
 const overlayRestartButton = requiredElement<HTMLButtonElement>("overlayRestartButton");
 const overlayRetryButton = requiredElement<HTMLButtonElement>("overlayRetryButton");
 const campaignRestartButton = requiredElement<HTMLButtonElement>("campaignRestartButton");
+const levelSelectButton = requiredElement<HTMLButtonElement>("levelSelectButton");
+const levelSelectOverlay = requiredElement<HTMLDivElement>("levelSelectOverlay");
+const levelSelectGrid = requiredElement<HTMLDivElement>("levelSelectGrid");
+const levelSelectSummary = requiredElement<HTMLElement>("levelSelectSummary");
+const levelSelectClose = requiredElement<HTMLButtonElement>("levelSelectClose");
 const resultOverlay = requiredElement<HTMLDivElement>("resultOverlay");
 const resultTitle = requiredElement<HTMLParagraphElement>("resultTitle");
 const resultSubtitle = requiredElement<HTMLParagraphElement>("resultSubtitle");
@@ -42,6 +47,7 @@ const hud = {
 };
 
 let deterministicTestMode = false;
+let levelSelectRenderKey = "";
 
 function renderNow(): void {
   const state = engine.getState();
@@ -84,6 +90,20 @@ campaignRestartButton.addEventListener("click", () => {
   renderNow();
 });
 
+levelSelectButton.addEventListener("click", () => {
+  openLevelSelect();
+});
+
+levelSelectClose.addEventListener("click", () => {
+  closeLevelSelect();
+});
+
+levelSelectOverlay.addEventListener("click", (event) => {
+  if (event.target === levelSelectOverlay) {
+    closeLevelSelect();
+  }
+});
+
 pauseButton.addEventListener("click", () => {
   engine.togglePause();
   renderNow();
@@ -118,6 +138,11 @@ window.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() === "r") {
     engine.restartLevel();
     renderNow();
+    return;
+  }
+
+  if (event.key === "Escape" && !levelSelectOverlay.hidden) {
+    closeLevelSelect();
   }
 });
 
@@ -167,8 +192,60 @@ function updateHud(state: GameStateSnapshot): void {
           ? "出口已经开启，立刻撤离。"
           : "收集所有信件，然后抵达出口。";
   pauseButton.classList.toggle("is-playing", state.status === "paused");
+  levelSelectButton.setAttribute("aria-expanded", String(!levelSelectOverlay.hidden));
+  if (!levelSelectOverlay.hidden) {
+    renderLevelSelect(state);
+  }
   resultOverlay.hidden = state.status !== "won" && state.status !== "lost" && state.status !== "completed";
   updateResultOverlay(state);
+}
+
+function openLevelSelect(): void {
+  levelSelectOverlay.hidden = false;
+  levelSelectButton.setAttribute("aria-expanded", "true");
+  renderLevelSelect(engine.getState());
+}
+
+function closeLevelSelect(): void {
+  levelSelectOverlay.hidden = true;
+  levelSelectButton.setAttribute("aria-expanded", "false");
+}
+
+function renderLevelSelect(state: GameStateSnapshot): void {
+  const renderKey = `${state.level}:${state.unlockedLevel}:${state.maxLevel}`;
+  if (renderKey === levelSelectRenderKey && levelSelectGrid.children.length > 0) {
+    return;
+  }
+  levelSelectRenderKey = renderKey;
+  levelSelectSummary.textContent = `已解锁 ${state.unlockedLevel} / ${state.maxLevel}`;
+  levelSelectGrid.replaceChildren(
+    ...Array.from({ length: state.maxLevel }, (_, index) => {
+      const level = index + 1;
+      const unlocked = level <= state.unlockedLevel;
+      const current = level === state.level;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "level-choice";
+      button.disabled = !unlocked;
+      button.dataset.level = String(level);
+      button.setAttribute("aria-current", current ? "true" : "false");
+
+      const title = document.createElement("span");
+      title.textContent = `第 ${level} 关`;
+      const detail = document.createElement("small");
+      detail.textContent = current ? "当前关卡" : unlocked ? "已解锁" : "未解锁";
+      button.replaceChildren(title, detail);
+
+      if (unlocked) {
+        button.addEventListener("click", () => {
+          engine.selectLevel(level);
+          closeLevelSelect();
+          renderNow();
+        });
+      }
+      return button;
+    }),
+  );
 }
 
 function updateResultOverlay(state: GameStateSnapshot): void {

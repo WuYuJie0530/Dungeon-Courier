@@ -81,6 +81,27 @@ test("winning a level unlocks the next level flow", async ({ page }) => {
   await expect(page.locator("#levelHud")).toContainText(`第 ${nextState.level} 关`);
 });
 
+test("level progress selector only enables unlocked levels", async ({ page }) => {
+  await page.click("#levelSelectButton");
+  await expect(page.locator("#levelSelectOverlay")).toBeVisible();
+  await expect(page.locator('.level-choice[data-level="1"]')).toBeEnabled();
+  await expect(page.locator('.level-choice[data-level="2"]')).toBeDisabled();
+  await page.click("#levelSelectClose");
+
+  const wonState = await runScriptedWin(page, "browser-level-select");
+  expect(wonState.unlockedLevel).toBe(2);
+
+  await page.click("#levelSelectButton");
+  await expect(page.locator("#levelSelectSummary")).toContainText("2 / 5");
+  await expect(page.locator('.level-choice[data-level="2"]')).toBeEnabled();
+  await expect(page.locator('.level-choice[data-level="3"]')).toBeDisabled();
+  await page.click('.level-choice[data-level="2"]');
+
+  const selectedState = await page.evaluate(() => window.__GAME_TEST_API__.getState());
+  expect(selectedState.level).toBe(2);
+  expect(selectedState.status).toBe("playing");
+});
+
 test("final fifth level shows campaign celebration instead of another level", async ({ page }) => {
   const result = await page.evaluate(() => {
     const api = window.__GAME_TEST_API__;

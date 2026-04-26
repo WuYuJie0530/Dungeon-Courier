@@ -217,4 +217,26 @@ describe("Dungeon Courier engine", () => {
     expect(afterNext.level).toBe(MAX_LEVEL);
     expect(afterNext.status).toBe("completed");
   });
+
+  it("only allows selecting unlocked levels", () => {
+    const engine = new GameEngine();
+    expect(engine.getState().unlockedLevel).toBe(1);
+
+    const locked = engine.selectLevel(3);
+    expect(locked.level).toBe(1);
+
+    const firstMap = engine.getMap();
+    for (const letter of firstMap.letterSpawns) {
+      routeTo(engine, letter);
+    }
+    routeTo(engine, firstMap.exit);
+    expect(engine.getState().unlockedLevel).toBe(2);
+
+    const selected = engine.selectLevel(2);
+    expect(selected.level).toBe(2);
+    expect(selected.status).toBe("playing");
+
+    const stillLocked = engine.selectLevel(4);
+    expect(stillLocked.level).toBe(2);
+  });
 });

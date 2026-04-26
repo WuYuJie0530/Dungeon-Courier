@@ -43,6 +43,7 @@ window.__GAME_TEST_API__ = {
   movePlayer,
   dash,
   nextLevel,
+  selectLevel,
   getMap,
   getEntities
 }
