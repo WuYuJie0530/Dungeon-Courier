@@ -228,6 +228,16 @@ input {
   filter: drop-shadow(0 0 13px rgba(17, 244, 238, 0.46));
 }
 
+.lives-card {
+  grid-template-columns: clamp(3.45rem, 3.85vw, 4.25rem) minmax(0, 1fr);
+}
+
+.lives-card > div:last-child {
+  display: grid;
+  align-content: center;
+  gap: clamp(0.24rem, 0.32vw, 0.38rem);
+}
+
 .heart-symbol {
   position: relative;
   width: clamp(2.35rem, 2.82vw, 3.05rem);
@@ -269,46 +279,57 @@ input {
 
 .clock-symbol {
   position: relative;
-  border: 5px solid #23f3ef;
+  border: 0;
   border-radius: 50%;
+  background: none;
 }
 
 .clock-symbol::before,
 .clock-symbol::after {
   content: "";
   position: absolute;
-  background: #23f3ef;
-  transform-origin: bottom center;
 }
 
 .clock-symbol::before {
-  width: 4px;
-  height: 1.2rem;
-  transform: translateY(-0.3rem);
+  inset: 9%;
+  border: clamp(3px, 0.28vw, 4px) solid #23f3ef;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #23f3ef 0 7%, transparent 8%),
+    rgba(35, 243, 239, 0.05);
 }
 
 .clock-symbol::after {
-  width: 4px;
-  height: 0.95rem;
-  transform: translate(0.55rem, 0.2rem) rotate(90deg);
+  top: 50%;
+  left: 50%;
+  width: 66%;
+  height: 66%;
+  background:
+    linear-gradient(#23f3ef, #23f3ef) 50% 8% / clamp(3px, 0.24vw, 4px) 42% no-repeat,
+    linear-gradient(#23f3ef, #23f3ef) 73% 50% / 46% clamp(3px, 0.24vw, 4px) no-repeat;
+  transform: translate(-50%, -50%);
 }
 
 .letter-symbol,
 .letter-legend {
+  position: relative;
   border: 3px solid #ffd55f;
-  border-radius: 5px;
-  background: linear-gradient(180deg, rgba(255, 228, 121, 0.28), rgba(241, 160, 36, 0.16));
+  border-radius: 6px;
+  background: rgba(255, 215, 95, 0.1);
   box-shadow: 0 0 18px rgba(255, 191, 64, 0.55);
 }
 
 .letter-symbol::before,
 .letter-legend::before {
   content: "";
-  width: 2rem;
-  height: 2rem;
-  border-left: 3px solid #ffd55f;
-  border-bottom: 3px solid #ffd55f;
-  transform: rotate(-45deg) translate(0.15rem, -0.2rem);
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: 0;
+  background:
+    linear-gradient(35deg, transparent 47%, #ffd55f 48% 53%, transparent 54%) left bottom / 50% 72% no-repeat,
+    linear-gradient(-35deg, transparent 47%, #ffd55f 48% 53%, transparent 54%) right bottom / 50% 72% no-repeat;
 }
 
 .charm-legend {
@@ -431,25 +452,23 @@ input {
   place-items: center;
   border: 0;
   border-radius: 0;
-  background:
-    radial-gradient(circle at 50% 52%, rgba(255, 112, 112, 0.18), transparent 48%),
-    radial-gradient(circle at 50% 50%, rgba(255, 73, 83, 0.14), transparent 68%);
+  background: none;
   box-shadow: none;
   transform: none;
-  filter:
-    drop-shadow(0 0 10px rgba(255, 111, 109, 0.58))
-    drop-shadow(0 0 22px rgba(255, 68, 82, 0.3));
+  filter: none;
 }
 
 .heart-symbol::before {
   content: "";
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: 88%;
   height: 82%;
   border: 0;
   border-radius: 0;
   background: var(--heart-icon) center / contain no-repeat;
-  transform: translateY(0.08rem);
+  transform: translate(-50%, -50%);
   box-shadow: none;
 }
 
@@ -465,19 +484,21 @@ input {
   border: 0;
   border-radius: 0;
   background: none;
-  filter: drop-shadow(0 0 0.42rem rgba(80, 255, 247, 0.58));
+  filter: none;
   transform: none;
 }
 
 .life-pip::before {
   content: "";
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: 100%;
   height: 94%;
   border: 0;
   border-radius: 0;
   background: var(--heart-icon) center / contain no-repeat;
-  transform: none;
+  transform: translate(-50%, -50%);
   box-shadow: none;
 }
 
@@ -1266,6 +1287,10 @@ canvas {
   border-radius: 50%;
 }
 
+.level-failed #overlayRetryButton::before {
+  border-right-color: currentColor;
+}
+
 #overlayRetryButton::after {
   display: none;
 }
@@ -1449,11 +1474,22 @@ canvas {
 }
 
 .game-shell.is-failed-state .clock-symbol {
-  border-color: #ff4747;
+  color: #ff4747;
 }
 
-.game-shell.is-failed-state .clock-symbol::before,
-.game-shell.is-failed-state .clock-symbol::after,
+.game-shell.is-failed-state .clock-symbol::before {
+  border-color: #ff4747;
+  background:
+    radial-gradient(circle at 50% 50%, #ff4747 0 7%, transparent 8%),
+    rgba(255, 71, 71, 0.08);
+}
+
+.game-shell.is-failed-state .clock-symbol::after {
+  background:
+    linear-gradient(#ff4747, #ff4747) 50% 8% / clamp(3px, 0.24vw, 4px) 42% no-repeat,
+    linear-gradient(#ff4747, #ff4747) 73% 50% / 46% clamp(3px, 0.24vw, 4px) no-repeat;
+}
+
 .game-shell.is-failed-state .dash-cell.ready {
   background: #ff4747;
   border-color: #ff7770;
@@ -1464,6 +1500,13 @@ canvas {
 .game-shell.is-failed-state .letter-legend {
   border-color: #ffb15f;
   box-shadow: 0 0 18px rgba(255, 94, 55, 0.5);
+}
+
+.game-shell.is-failed-state .letter-symbol::before,
+.game-shell.is-failed-state .letter-legend::before {
+  background:
+    linear-gradient(35deg, transparent 47%, #ffb15f 48% 53%, transparent 54%) left bottom / 50% 72% no-repeat,
+    linear-gradient(-35deg, transparent 47%, #ffb15f 48% 53%, transparent 54%) right bottom / 50% 72% no-repeat;
 }
 
 .game-shell.is-failed-state .pause-control,
@@ -1782,8 +1825,9 @@ canvas {
 }
 
 .letter-legend::before {
-  width: 1.28rem;
-  height: 1.28rem;
+  inset: 0;
+  width: auto;
+  height: auto;
 }
 
 .exit-legend {
@@ -2263,10 +2307,9 @@ button.level-badge[aria-expanded="true"] {
   }
 
   .letter-legend::before {
-    width: 0.96rem;
-    height: 0.96rem;
-    border-left-width: 2px;
-    border-bottom-width: 2px;
+    inset: 0;
+    width: auto;
+    height: auto;
   }
 
   .exit-legend {
