@@ -1,7 +1,7 @@
 :root {
   color: #f6fbff;
   background: #02070a;
-  --stage-width: 1536px;
+  --stage-width: 1680px;
   --stage-aspect: 1.765;
   --stage-gap: 12px;
   --cyan: #11f4ee;
@@ -78,7 +78,7 @@ input {
 
 .game-shell {
   position: relative;
-  width: min(var(--stage-width), calc(100vw - 24px), calc((100svh - 18px) * var(--stage-aspect)));
+  width: min(var(--stage-width), calc(100vw - 24px));
   height: 100vh;
   height: 100svh;
   margin: 0 auto;
@@ -405,7 +405,7 @@ input {
 
 .dungeon-layout {
   display: grid;
-  grid-template-columns: clamp(188px, 15.625%, 240px) minmax(0, 1fr) clamp(188px, 15.625%, 240px);
+  grid-template-columns: clamp(212px, 18.2%, 300px) minmax(0, 1fr) clamp(212px, 18.2%, 300px);
   gap: var(--stage-gap);
   align-items: stretch;
   min-height: 0;
@@ -592,16 +592,20 @@ canvas {
 
 .result-card {
   position: relative;
-  width: min(685px, 84%);
+  width: min(840px, 91%);
   display: grid;
   justify-items: center;
-  gap: clamp(0.36rem, 0.62vw, 0.68rem);
+  gap: clamp(0.42rem, 0.7vw, 0.78rem);
   border: 2px solid var(--cyan);
-  border-radius: 8px;
-  padding: clamp(1.35rem, 2svh, 1.85rem) clamp(1.6rem, 2vw, 2rem) clamp(1rem, 1.7svh, 1.45rem);
+  border-radius: 6px;
+  clip-path: polygon(3.5% 0, 96.5% 0, 100% 7%, 100% 93%, 96.5% 100%, 3.5% 100%, 0 93%, 0 7%);
+  padding: clamp(1.45rem, 2.45svh, 2.25rem) clamp(1.9rem, 2.7vw, 2.7rem) clamp(1.15rem, 2svh, 1.75rem);
   background:
+    linear-gradient(90deg, rgba(17, 244, 238, 0.16) 0 1px, transparent 1px calc(100% - 1px), rgba(17, 244, 238, 0.16) calc(100% - 1px)),
+    linear-gradient(180deg, rgba(17, 244, 238, 0.16) 0 1px, transparent 1px calc(100% - 1px), rgba(17, 244, 238, 0.16) calc(100% - 1px)),
     linear-gradient(135deg, rgba(17, 244, 238, 0.16), transparent 22%, transparent 78%, rgba(255, 215, 94, 0.15)),
     radial-gradient(circle at 50% 10%, rgba(255, 215, 94, 0.17), transparent 35%),
+    radial-gradient(circle at 50% 70%, rgba(17, 244, 238, 0.11), transparent 42%),
     rgba(2, 12, 16, 0.92);
   box-shadow:
     0 0 42px rgba(17, 244, 238, 0.36),
@@ -613,15 +617,19 @@ canvas {
 .result-card::after {
   content: "";
   position: absolute;
-  inset: 0.55rem;
+  inset: 0.72rem;
   border: 1px solid rgba(17, 244, 238, 0.24);
+  clip-path: polygon(3.5% 0, 96.5% 0, 100% 7%, 100% 93%, 96.5% 100%, 3.5% 100%, 0 93%, 0 7%);
   pointer-events: none;
 }
 
 .result-card::after {
-  inset: -1.1rem;
-  border-color: rgba(255, 215, 94, 0.14);
-  filter: blur(3px);
+  inset: -0.95rem;
+  border-color: rgba(17, 244, 238, 0.22);
+  background:
+    linear-gradient(90deg, transparent 0 28%, rgba(17, 244, 238, 0.65) 28% 62%, transparent 62%) top center / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent 0 34%, rgba(17, 244, 238, 0.65) 34% 66%, transparent 66%) bottom center / 100% 1px no-repeat;
+  filter: drop-shadow(0 0 14px rgba(17, 244, 238, 0.35));
 }
 
 .celebration-effects {
@@ -725,8 +733,8 @@ canvas {
 
 .celebration-emblem {
   position: relative;
-  width: clamp(4.7rem, 6vw, 6.25rem);
-  height: clamp(3.6rem, 4.7vw, 4.8rem);
+  width: clamp(5rem, 6.7vw, 7rem);
+  height: clamp(3.9rem, 5.2vw, 5.35rem);
   display: grid;
   place-items: center;
 }
@@ -765,7 +773,7 @@ canvas {
 .result-overlay p {
   margin: 0;
   color: #fff4d5;
-  font-size: clamp(2.4rem, 4.15vw, 4.25rem);
+  font-size: clamp(2.75rem, 5.2vw, 5.35rem);
   font-weight: 900;
   text-align: center;
   text-shadow:
@@ -775,26 +783,42 @@ canvas {
 
 .result-subtitle {
   color: #76fff7 !important;
-  font-size: clamp(1rem, 1.45vw, 1.35rem) !important;
+  font-size: clamp(1.08rem, 1.7vw, 1.62rem) !important;
   text-shadow: 0 0 16px rgba(17, 244, 238, 0.55) !important;
 }
 
 .result-stats {
-  width: min(580px, 100%);
+  width: min(735px, 100%);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  margin-top: 0.6rem;
+  margin-top: 0.7rem;
   border: 1px solid rgba(17, 244, 238, 0.28);
-  background: rgba(1, 9, 12, 0.62);
+  clip-path: polygon(2.5% 0, 97.5% 0, 100% 20%, 100% 80%, 97.5% 100%, 2.5% 100%, 0 80%, 0 20%);
+  background:
+    linear-gradient(90deg, rgba(17, 244, 238, 0.08), transparent 16%, transparent 84%, rgba(17, 244, 238, 0.08)),
+    rgba(1, 9, 12, 0.72);
 }
 
 .result-stats div {
   display: grid;
-  gap: 0.24rem;
+  gap: 0.18rem;
   justify-items: center;
-  padding: clamp(0.5rem, 0.9svh, 0.78rem) 0.48rem;
+  padding: clamp(0.6rem, 1.15svh, 0.94rem) 0.48rem clamp(0.52rem, 0.95svh, 0.84rem);
   border-right: 1px solid rgba(17, 244, 238, 0.2);
 }
+
+.result-stats div::before {
+  color: var(--cyan);
+  font-size: clamp(1.25rem, 1.85vw, 1.85rem);
+  line-height: 1;
+  text-shadow: 0 0 16px rgba(17, 244, 238, 0.48);
+}
+
+.result-stats div:nth-child(1)::before { content: "⚑"; }
+.result-stats div:nth-child(2)::before { content: "◷"; }
+.result-stats div:nth-child(3)::before { content: "✉"; color: var(--gold); text-shadow: 0 0 16px rgba(255, 215, 94, 0.5); }
+.result-stats div:nth-child(4)::before { content: "♡"; }
+.result-stats div:nth-child(5)::before { content: "☆"; color: var(--gold); text-shadow: 0 0 16px rgba(255, 215, 94, 0.5); }
 
 .result-stats div:last-child {
   border-right: 0;
@@ -802,13 +826,13 @@ canvas {
 
 .result-stats span {
   color: #dce8ea;
-  font-size: clamp(0.68rem, 0.78vw, 0.82rem);
+  font-size: clamp(0.68rem, 0.82vw, 0.86rem);
   font-weight: 800;
 }
 
 .result-stats strong {
   color: #fff4d5;
-  font-size: clamp(1.12rem, 1.45vw, 1.38rem);
+  font-size: clamp(1.18rem, 1.72vw, 1.7rem);
   text-shadow: 0 0 16px rgba(255, 215, 94, 0.48);
 }
 
@@ -819,20 +843,21 @@ canvas {
 }
 
 .result-actions {
-  width: min(585px, 100%);
+  width: min(720px, 100%);
   display: grid;
   grid-template-columns: 1fr 1.5fr 1fr;
   gap: clamp(0.55rem, 0.8vw, 0.85rem);
-  margin-top: 0.35rem;
+  margin-top: 0.45rem;
 }
 
 .result-actions button {
-  min-height: clamp(2.4rem, 5svh, 2.85rem);
-  font-size: clamp(0.92rem, 1vw, 1.05rem);
+  min-height: clamp(2.65rem, 5.8svh, 3.35rem);
+  font-size: clamp(1rem, 1.18vw, 1.22rem);
+  clip-path: polygon(5% 0, 95% 0, 100% 18%, 100% 82%, 95% 100%, 5% 100%, 0 82%, 0 18%);
 }
 
 .primary-result-action {
-  font-size: clamp(1.1rem, 1.32vw, 1.28rem) !important;
+  font-size: clamp(1.18rem, 1.58vw, 1.55rem) !important;
   background:
     linear-gradient(135deg, rgba(255, 238, 139, 0.28), transparent 28%),
     linear-gradient(180deg, rgba(143, 92, 15, 0.96), rgba(64, 38, 9, 0.98));
@@ -1528,7 +1553,7 @@ button.level-badge[aria-expanded="true"] {
 
 @media (max-height: 760px) and (min-width: 1181px) {
   .game-shell {
-    width: min(var(--stage-width), calc(100vw - 24px), calc((100svh - 10px) * var(--stage-aspect)));
+    width: min(var(--stage-width), calc(100vw - 24px));
     gap: 8px;
     padding-block: 8px;
   }
@@ -1715,6 +1740,65 @@ button.level-badge[aria-expanded="true"] {
     margin-top: 0.05rem;
     padding-block: 0.35rem;
     font-size: 0.92rem;
+  }
+
+  .result-overlay {
+    padding: 0.8rem;
+  }
+
+  .result-card {
+    width: min(820px, 91%);
+    gap: 0.42rem;
+    padding: 1.1rem 1.7rem 0.95rem;
+  }
+
+  .celebration-emblem {
+    width: 4.65rem;
+    height: 3.45rem;
+  }
+
+  .result-overlay p {
+    font-size: 4.05rem;
+    line-height: 0.95;
+  }
+
+  .result-subtitle {
+    font-size: 1.2rem !important;
+  }
+
+  .result-stats {
+    width: min(705px, 100%);
+    margin-top: 0.4rem;
+  }
+
+  .result-stats div {
+    padding: 0.48rem 0.35rem 0.42rem;
+  }
+
+  .result-stats div::before {
+    font-size: 1.35rem;
+  }
+
+  .result-stats strong {
+    font-size: 1.28rem;
+  }
+
+  .result-praise {
+    font-size: 1.02rem !important;
+  }
+
+  .result-actions {
+    width: min(690px, 100%);
+    margin-top: 0.26rem;
+  }
+
+  .result-actions button {
+    min-height: 2.5rem;
+    font-size: 1rem;
+  }
+
+  .primary-result-action {
+    font-size: 1.2rem !important;
   }
 }
 
