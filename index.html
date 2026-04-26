@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dungeon Courier</title>
-    <script type="module" crossorigin src="/Dungeon-Courier-/assets/index-D15eYNQo.js"></script>
-    <link rel="stylesheet" crossorigin href="/Dungeon-Courier-/assets/index-C1pacIkl.css">
+    <script type="module" crossorigin src="/Dungeon-Courier-/assets/index-DOnVCTCo.js"></script>
+    <link rel="stylesheet" crossorigin href="/Dungeon-Courier-/assets/index-D_Obj2rp.css">
   </head>
   <body>
     <div id="app" class="game-shell">
@@ -158,7 +158,9 @@
 
           <section class="info-panel restart-panel">
             <h2>关卡进度</h2>
-            <div id="levelHud" class="level-badge">第 1 关</div>
+            <button id="levelSelectButton" class="level-badge" type="button" aria-expanded="false" aria-controls="levelSelectOverlay">
+              <span id="levelHud">第 1 关</span>
+            </button>
             <div class="status-grid">
               <span>难度</span><strong id="difficultyHud">入门</strong>
               <span>追踪者</span><strong id="chaserCount">0</strong>
@@ -169,6 +171,19 @@
           </section>
         </aside>
       </main>
+
+      <div id="levelSelectOverlay" class="level-select-overlay" hidden>
+        <section class="level-select-card" aria-label="关卡选择">
+          <div class="level-select-head">
+            <div>
+              <p>关卡进度</p>
+              <strong id="levelSelectSummary">已解锁 1 / 5</strong>
+            </div>
+            <button id="levelSelectClose" class="level-select-close" type="button" aria-label="关闭关卡选择">×</button>
+          </div>
+          <div id="levelSelectGrid" class="level-select-grid"></div>
+        </section>
+      </div>
     </div>
   </body>
 </html>
