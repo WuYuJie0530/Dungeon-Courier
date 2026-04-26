@@ -183,6 +183,7 @@ function updateHud(state: GameStateSnapshot): void {
   hud.chasers.textContent = String(chasers);
   hud.patrollers.textContent = String(patrollers);
   appShell.classList.toggle("is-failed-state", state.status === "lost");
+  appShell.classList.toggle("is-success-state", state.status === "won" || state.status === "completed");
   hud.objective.textContent =
     state.status === "completed"
       ? "五关任务全部完成，地牢邮路已打通。"
