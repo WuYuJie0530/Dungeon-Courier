@@ -962,23 +962,82 @@ canvas {
 }
 
 .level-badge {
-  min-height: clamp(2.25rem, 5svh, 2.9rem);
+  position: relative;
+  min-height: clamp(3.25rem, 6.4svh, 4rem);
   display: grid;
-  place-items: center;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  justify-items: stretch;
+  gap: 0.65rem;
   border: 1px solid var(--cyan-dim);
   border-radius: 4px;
   color: #f6fbff;
   background:
+    linear-gradient(90deg, rgba(17, 244, 238, 0.18), transparent 46%),
+    linear-gradient(135deg, rgba(255, 215, 94, 0.16), transparent 28%),
     radial-gradient(circle at 50% 0%, rgba(17, 244, 238, 0.2), transparent 58%),
     rgba(1, 11, 15, 0.85);
-  padding: 0.25rem 0.55rem;
-  font-size: clamp(1.05rem, 1.45vw, 1.35rem);
+  padding: 0.48rem 0.58rem 0.48rem 0.72rem;
+  font-size: clamp(1rem, 1.3vw, 1.26rem);
   font-weight: 900;
   text-shadow: 0 0 14px rgba(17, 244, 238, 0.45);
 }
 
 button.level-badge {
   cursor: pointer;
+  animation: level-cta-pulse 2600ms ease-in-out infinite;
+}
+
+.level-badge::before {
+  content: "查看";
+  position: absolute;
+  top: -0.62rem;
+  right: 0.58rem;
+  border: 1px solid rgba(255, 215, 94, 0.6);
+  border-radius: 999px;
+  color: #ffe27a;
+  background: rgba(10, 12, 9, 0.96);
+  padding: 0.06rem 0.38rem;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-shadow: 0 0 10px rgba(255, 215, 94, 0.55);
+}
+
+.level-badge-copy {
+  display: grid;
+  gap: 0.12rem;
+  justify-items: start;
+  text-align: left;
+}
+
+.level-badge-copy strong {
+  color: #f6fbff;
+  font-size: clamp(1.05rem, 1.45vw, 1.34rem);
+  line-height: 1;
+}
+
+.level-badge-copy small {
+  color: #79fff7;
+  font-size: clamp(0.62rem, 0.72vw, 0.78rem);
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 0 12px rgba(17, 244, 238, 0.55);
+}
+
+.level-badge-arrow {
+  width: 1.55rem;
+  height: 1.55rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 215, 94, 0.56);
+  border-radius: 50%;
+  color: var(--gold);
+  font-size: 1.6rem;
+  line-height: 1;
+  box-shadow: 0 0 16px rgba(255, 215, 94, 0.22);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 button.level-badge:hover,
@@ -988,6 +1047,18 @@ button.level-badge:focus-visible {
   box-shadow:
     inset 0 0 18px rgba(17, 244, 238, 0.14),
     0 0 24px rgba(17, 244, 238, 0.28);
+}
+
+button.level-badge:hover .level-badge-arrow,
+button.level-badge:focus-visible .level-badge-arrow,
+button.level-badge[aria-expanded="true"] .level-badge-arrow {
+  transform: translateX(0.18rem);
+  box-shadow: 0 0 24px rgba(255, 215, 94, 0.42);
+}
+
+button.level-badge[aria-expanded="true"] {
+  border-color: var(--gold);
+  animation: none;
 }
 
 .level-select-overlay {
@@ -1164,6 +1235,19 @@ button.level-badge:focus-visible {
   }
 }
 
+@keyframes level-cta-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 0 16px rgba(17, 244, 238, 0.14);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 18px rgba(17, 244, 238, 0.16),
+      0 0 28px rgba(255, 215, 94, 0.22);
+  }
+}
+
 @media (max-height: 760px) and (min-width: 1181px) {
   .game-shell {
     width: min(var(--stage-width), calc(100vw - 24px), calc((100svh - 10px) * var(--stage-aspect)));
@@ -1319,8 +1403,28 @@ button.level-badge:focus-visible {
   }
 
   .level-badge {
-    min-height: 2.25rem;
+    min-height: 2.9rem;
     font-size: 1rem;
+  }
+
+  .level-badge::before {
+    top: -0.5rem;
+    right: 0.42rem;
+    font-size: 0.56rem;
+  }
+
+  .level-badge-copy strong {
+    font-size: 1rem;
+  }
+
+  .level-badge-copy small {
+    font-size: 0.58rem;
+  }
+
+  .level-badge-arrow {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 1.3rem;
   }
 
   .status-grid {
