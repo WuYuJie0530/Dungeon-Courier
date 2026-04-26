@@ -25,7 +25,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: auto;
+  min-height: 100svh;
+  overflow: hidden;
   background:
     linear-gradient(rgba(14, 238, 230, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(14, 238, 230, 0.035) 1px, transparent 1px),
@@ -74,15 +75,22 @@ input {
 
 .game-shell {
   width: min(1860px, 100%);
+  height: 100vh;
+  height: 100svh;
   margin: 0 auto;
-  padding: clamp(0.35rem, 0.8vw, 0.65rem);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(0.45rem, 0.7vw, 0.75rem);
+  padding: clamp(0.35rem, 0.65vw, 0.65rem);
+  overflow: hidden;
 }
 
 .hudbar {
   display: grid;
   grid-template-columns: 1.05fr 1.15fr 1.25fr 1.2fr 1.05fr;
-  gap: 0.9rem;
-  margin-bottom: 0.9rem;
+  gap: clamp(0.45rem, 0.7vw, 0.9rem);
+  margin-bottom: 0;
+  min-width: 0;
 }
 
 .hud-card,
@@ -149,12 +157,17 @@ input {
 }
 
 .hud-card {
-  min-height: 6.45rem;
+  min-width: 0;
+  min-height: clamp(5.2rem, 10svh, 6.2rem);
   display: grid;
-  grid-template-columns: 4.7rem 1fr;
+  grid-template-columns: clamp(3.35rem, 4.6vw, 4.4rem) minmax(0, 1fr);
   align-items: center;
-  gap: 0.8rem;
-  padding: 0.85rem 1.15rem;
+  gap: clamp(0.45rem, 0.65vw, 0.8rem);
+  padding: clamp(0.6rem, 0.8vw, 0.85rem) clamp(0.72rem, 0.9vw, 1.15rem);
+}
+
+.hud-card > div:last-child {
+  min-width: 0;
 }
 
 .hud-card p,
@@ -172,13 +185,18 @@ input {
 .hud-card strong {
   display: block;
   color: #f8fbff;
-  font-size: clamp(1.75rem, 2.55vw, 2.75rem);
+  font-size: clamp(1.55rem, 2.1vw, 2.45rem);
   line-height: 1.05;
+  white-space: nowrap;
+}
+
+#timerHud {
+  font-size: clamp(1.45rem, 1.9vw, 2.15rem);
 }
 
 .hud-symbol {
-  width: 3.6rem;
-  height: 3.6rem;
+  width: clamp(2.85rem, 3.8vw, 3.6rem);
+  height: clamp(2.85rem, 3.8vw, 3.6rem);
   display: grid;
   place-items: center;
   justify-self: center;
@@ -378,19 +396,31 @@ input {
 
 .dungeon-layout {
   display: grid;
-  grid-template-columns: 18rem minmax(48rem, 1fr) 18rem;
-  gap: 0.9rem;
-  align-items: start;
+  grid-template-columns: minmax(14.5rem, 0.82fr) minmax(0, 3.5fr) minmax(14.5rem, 0.82fr);
+  gap: clamp(0.45rem, 0.7vw, 0.9rem);
+  align-items: stretch;
+  min-height: 0;
 }
 
 .side-rail {
   display: grid;
-  align-content: start;
-  gap: 0.8rem;
+  min-width: 0;
+  min-height: 0;
+  gap: clamp(0.45rem, 0.65vw, 0.8rem);
+  overflow: hidden;
+}
+
+.left-rail {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.right-rail {
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .info-panel {
-  padding: 1rem 1.05rem;
+  min-height: 0;
+  padding: clamp(0.62rem, 0.8vw, 1rem) clamp(0.7rem, 0.85vw, 1.05rem);
 }
 
 .info-panel h2 {
@@ -403,11 +433,11 @@ input {
 .enemy-entry,
 .enemy-card {
   display: grid;
-  grid-template-columns: 5.3rem 1fr;
-  gap: 1rem;
+  grid-template-columns: clamp(3.6rem, 4.4vw, 5.1rem) minmax(0, 1fr);
+  gap: clamp(0.55rem, 0.7vw, 1rem);
   align-items: center;
-  margin-top: 0.75rem;
-  padding: 0.78rem;
+  margin-top: clamp(0.42rem, 0.6vw, 0.75rem);
+  padding: clamp(0.48rem, 0.65vw, 0.78rem);
   border: 1px solid rgba(200, 226, 226, 0.18);
   border-radius: 4px;
   background: rgba(7, 12, 15, 0.58);
@@ -431,8 +461,8 @@ input {
 }
 
 .enemy-avatar {
-  width: 3.65rem;
-  height: 3.65rem;
+  width: clamp(2.75rem, 3.4vw, 3.65rem);
+  height: clamp(2.75rem, 3.4vw, 3.65rem);
   display: block;
   border-radius: 50%;
 }
@@ -473,18 +503,18 @@ input {
 
 .controls-panel {
   display: grid;
-  gap: 0.75rem;
+  gap: clamp(0.42rem, 0.55vw, 0.75rem);
 }
 
 .control-row {
   display: grid;
-  grid-template-columns: 8.1rem 1fr;
-  gap: 0.8rem;
+  grid-template-columns: minmax(6.4rem, 7.4rem) 1fr;
+  gap: clamp(0.45rem, 0.6vw, 0.8rem);
   align-items: center;
 }
 
 kbd {
-  min-height: 2.2rem;
+  min-height: clamp(1.65rem, 3.3svh, 2.2rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -499,7 +529,9 @@ kbd {
 .canvas-panel {
   position: relative;
   overflow: hidden;
-  min-height: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
   border: 1px solid var(--cyan);
   border-radius: 4px;
   background: #020304;
@@ -520,8 +552,9 @@ kbd {
 
 canvas {
   display: block;
-  width: 100%;
-  height: auto;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
   image-rendering: auto;
   aspect-ratio: 40 / 26;
 }
@@ -978,16 +1011,29 @@ canvas {
 }
 
 @media (max-width: 1180px) {
+  body {
+    overflow: auto;
+  }
+
+  .game-shell {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100svh;
+    overflow: visible;
+  }
+
   .hudbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dungeon-layout {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
 
   .side-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
   }
 
   .right-rail {
