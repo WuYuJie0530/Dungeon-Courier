@@ -25,11 +25,12 @@ describe("deterministic dungeon generation", () => {
 
   it("places gameplay entities on legal floor tiles", () => {
     const map = generateDungeon("placement-check");
-    const points = [map.spawn, map.exit, ...map.letterSpawns, ...map.enemySpawns];
+    const points = [map.spawn, map.exit, ...map.letterSpawns, ...map.charmSpawns, ...map.enemySpawns];
     for (const point of points) {
       expect(isFloor(map, point.x, point.y)).toBe(true);
     }
     expect(map.letterSpawns.length).toBeGreaterThanOrEqual(3);
+    expect(map.charmSpawns).toHaveLength(1);
     expect(map.enemySpawns.some((enemy) => enemy.kind === "chaser")).toBe(true);
     expect(map.enemySpawns.some((enemy) => enemy.kind === "patroller")).toBe(true);
   });

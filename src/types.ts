@@ -6,6 +6,7 @@ export const TIME_LIMIT_SECONDS = 90;
 export const PLAYER_START_LIVES = 3;
 export const DASH_COOLDOWN_FRAMES = 90;
 export const DASH_DISTANCE_TILES = 3;
+export const CHARM_SHIELD_FRAMES = 300;
 export const MAX_LEVEL = 5;
 
 export type Direction = "up" | "down" | "left" | "right";
@@ -43,6 +44,7 @@ export interface MapData {
   spawn: GridPoint;
   exit: GridPoint;
   letterSpawns: GridPoint[];
+  charmSpawns: GridPoint[];
   enemySpawns: EnemySpawn[];
 }
 
@@ -50,6 +52,7 @@ export interface Player extends GridPoint {
   lives: number;
   dashCooldownFrames: number;
   invulnerableFrames: number;
+  shieldFrames: number;
   lastDirection: Direction;
 }
 
@@ -67,6 +70,11 @@ export interface Letter extends GridPoint {
   collected: boolean;
 }
 
+export interface Charm extends GridPoint {
+  id: string;
+  collected: boolean;
+}
+
 export interface Exit extends GridPoint {
   open: boolean;
 }
@@ -75,6 +83,7 @@ export interface EntitySnapshot {
   player: Player;
   enemies: Enemy[];
   letters: Letter[];
+  charms: Charm[];
   exit: Exit;
 }
 
@@ -93,8 +102,12 @@ export interface GameStateSnapshot extends EntitySnapshot {
   status: GameStatus;
   collectedLetters: number;
   totalLetters: number;
+  collectedCharms: number;
+  totalCharms: number;
   dashCooldownFrames: number;
   dashReady: boolean;
+  shieldFrames: number;
+  shieldActive: boolean;
 }
 
 export interface GameTestApi {

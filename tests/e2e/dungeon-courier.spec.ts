@@ -180,7 +180,13 @@ test("failure state uses the red mission failure results screen", async ({ page 
   await expect(page.locator("#resultTitle")).toContainText("任务失败");
   await expect(page.locator("#resultSubtitle")).toContainText("行动失败");
   await expect(page.locator("#resultGrade")).toContainText("F");
-  await expect(page.locator("#overlayRestartButton")).toContainText("重新开始本关");
+  await expect(page.locator("#overlayRetryButton")).toContainText("再次挑战");
+  await expect(page.locator("#resultLevelSelectButton")).toContainText("关卡进度");
+  await expect(page.locator("#overlayRestartButton")).toBeHidden();
+  await page.click("#resultLevelSelectButton");
+  await expect(page.locator("#levelSelectOverlay")).toBeVisible();
+  await expect(page.locator("#levelSelectSummary")).toContainText("1 / 5");
+  await expect(page.locator("#restartButton")).toHaveCount(0);
 });
 
 test("pause button freezes step-driven simulation", async ({ page }) => {
@@ -217,6 +223,48 @@ test("dash cooldown prevents immediate repeated dash", async ({ page }) => {
 
   expect(result.afterFirst.dashCooldownFrames).toBeGreaterThan(0);
   expect(result.afterSecond.player).toEqual(result.afterFirst.player);
+});
+
+test("courier charm activates the shield HUD and blocks the next collision", async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const api = window.__GAME_TEST_API__;
+    const helpers = window.__TEST_HELPERS__;
+    api.restart("browser-charm-shield");
+    const map = api.getMap();
+    helpers.followPath(api, helpers.findPath(map, api.getState().player, map.charmSpawns[0]));
+    const protectedState = api.getState();
+    helpers.followPath(api, helpers.findPath(map, api.getState().player, protectedState.enemies[0]));
+    return {
+      protectedState,
+      afterCollision: api.getState(),
+    };
+  });
+
+  expect(result.protectedState.shieldActive).toBe(true);
+  expect(result.afterCollision.lives).toBe(result.protectedState.lives);
+  await expect(page.locator("#shieldHud")).toContainText("秒");
+  await expect(page.locator("#charmCount")).toContainText("1 / 1");
+});
+
+test("legend uses two visible columns and adapts the narrow pane order", async ({ page }) => {
+  const columns = page.locator(".legend-column");
+  await expect(columns).toHaveCount(2);
+  await expect(columns.nth(0)).toContainText("信件");
+  await expect(columns.nth(0)).toContainText("墙体");
+  await expect(columns.nth(1)).toContainText("追踪者");
+  await expect(columns.nth(1)).toContainText("玩家");
+  await expect(page.locator("#legendNextButton")).toHaveCount(0);
+
+  await page.setViewportSize({ width: 980, height: 760 });
+  const order = await page.evaluate(() => {
+    const canvasTop = document.querySelector(".canvas-panel")!.getBoundingClientRect().top;
+    const leftTop = document.querySelector(".left-rail")!.getBoundingClientRect().top;
+    const rightTop = document.querySelector(".right-rail")!.getBoundingClientRect().top;
+    return { canvasTop, leftTop, rightTop };
+  });
+
+  expect(order.canvasTop).toBeLessThan(order.rightTop);
+  expect(order.rightTop).toBeLessThan(order.leftTop);
 });
 
 test("mobile canvas viewport remains playable", async ({ page }) => {

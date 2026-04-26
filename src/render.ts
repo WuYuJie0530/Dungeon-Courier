@@ -1,4 +1,12 @@
-import { TILE_SIZE, type Direction, type Enemy, type GameStateSnapshot, type GridPoint, type MapData } from "./types";
+import {
+  CHARM_SHIELD_FRAMES,
+  TILE_SIZE,
+  type Direction,
+  type Enemy,
+  type GameStateSnapshot,
+  type GridPoint,
+  type MapData,
+} from "./types";
 
 export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
@@ -15,9 +23,9 @@ export class Renderer {
     this.ensureCanvasSize(map);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawMap(map);
-    this.drawCoordinateOverlay(map);
     this.drawDecorations(map);
     this.drawExit(state);
+    this.drawCharms(state);
     this.drawLetters(state);
     this.drawEnemyVision(state.enemies);
     this.drawEnemies(state.enemies);
@@ -132,38 +140,6 @@ export class Renderer {
       this.ctx.lineTo(px + 8, py + 20);
       this.ctx.stroke();
     }
-  }
-
-  private drawCoordinateOverlay(map: MapData): void {
-    this.ctx.save();
-    this.ctx.strokeStyle = "rgba(17, 244, 238, 0.78)";
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(1, 1, this.canvas.width - 2, this.canvas.height - 2);
-
-    this.ctx.fillStyle = "rgba(17, 244, 238, 0.78)";
-    this.ctx.font = "700 11px ui-monospace, SFMono-Regular, Consolas, monospace";
-    this.ctx.textAlign = "center";
-    this.ctx.textBaseline = "middle";
-
-    const letters = "ABCDEFGHIJKL".split("");
-    const rowStep = Math.max(1, Math.floor((map.height - 3) / letters.length));
-    for (let i = 0; i < letters.length; i += 1) {
-      const y = (i * rowStep + 1.5) * TILE_SIZE;
-      if (y < this.canvas.height - TILE_SIZE) {
-        this.ctx.fillText(letters[i], TILE_SIZE * 0.58, y);
-      }
-    }
-
-    const columnCount: number = 24;
-    const xStart = 2;
-    const xEnd = map.width - 2;
-    for (let i = 0; i < columnCount; i += 1) {
-      const t = columnCount === 1 ? 0 : i / (columnCount - 1);
-      const x = (xStart + (xEnd - xStart) * t) * TILE_SIZE;
-      this.ctx.fillText(String(i + 1).padStart(2, "0"), x, this.canvas.height - TILE_SIZE * 0.55);
-    }
-
-    this.ctx.restore();
   }
 
   private drawDecorations(map: MapData): void {
@@ -322,6 +298,47 @@ export class Renderer {
     }
   }
 
+  private drawCharms(state: GameStateSnapshot): void {
+    for (const charm of state.charms) {
+      if (charm.collected) {
+        continue;
+      }
+      const cx = charm.x * TILE_SIZE + TILE_SIZE / 2;
+      const cy = charm.y * TILE_SIZE + TILE_SIZE / 2;
+      const pulse = 0.5 + 0.5 * Math.sin(state.frame / 18);
+      const glow = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, 34 + pulse * 10);
+      glow.addColorStop(0, "rgba(116, 255, 246, 0.7)");
+      glow.addColorStop(1, "rgba(116, 255, 246, 0)");
+      this.ctx.fillStyle = glow;
+      this.ctx.fillRect(cx - 46, cy - 46, 92, 92);
+
+      this.ctx.save();
+      this.ctx.translate(cx, cy);
+      this.ctx.rotate(Math.PI / 4);
+      this.ctx.fillStyle = "#102d34";
+      this.ctx.strokeStyle = "#74fff6";
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, -11);
+      this.ctx.lineTo(10, -3);
+      this.ctx.lineTo(7, 10);
+      this.ctx.lineTo(0, 14);
+      this.ctx.lineTo(-7, 10);
+      this.ctx.lineTo(-10, -3);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+      this.ctx.strokeStyle = "#ffe178";
+      this.ctx.beginPath();
+      this.ctx.moveTo(-4, -2);
+      this.ctx.lineTo(0, 5);
+      this.ctx.lineTo(7, -6);
+      this.ctx.stroke();
+      this.ctx.restore();
+      this.ctx.lineWidth = 1;
+    }
+  }
+
   private drawEnemyVision(enemies: Enemy[]): void {
     for (const enemy of enemies) {
       if (enemy.kind !== "chaser") {
@@ -405,6 +422,18 @@ export class Renderer {
     const flicker = state.player.invulnerableFrames > 0 && state.frame % 10 < 5;
     this.ctx.save();
     this.ctx.translate(center.x, center.y);
+    if (state.player.shieldFrames > 0) {
+      const ratio = Math.min(1, state.player.shieldFrames / CHARM_SHIELD_FRAMES);
+      this.ctx.strokeStyle = `rgba(116, 255, 246, ${0.32 + ratio * 0.38})`;
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, 15 + Math.sin(state.frame / 12) * 1.5, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.fillStyle = `rgba(116, 255, 246, ${0.08 + ratio * 0.08})`;
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, 17, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
     this.ctx.rotate(directionAngle(state.player.lastDirection));
     this.ctx.fillStyle = "rgba(40, 211, 202, 0.26)";
     this.ctx.beginPath();

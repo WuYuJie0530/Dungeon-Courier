@@ -51,6 +51,7 @@ export function mapSignature(map: MapData): string {
     spawn: map.spawn,
     exit: map.exit,
     letters: map.letterSpawns,
+    charms: map.charmSpawns,
     enemies: map.enemySpawns,
   });
 }

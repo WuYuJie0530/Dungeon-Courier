@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DIRECTIONS, findPath, isFloor, nextPoint } from "../src/collision";
-import { DASH_COOLDOWN_FRAMES, FPS, MAX_LEVEL, TIME_LIMIT_SECONDS } from "../src/types";
+import { CHARM_SHIELD_FRAMES, DASH_COOLDOWN_FRAMES, FPS, MAX_LEVEL, TIME_LIMIT_SECONDS } from "../src/types";
 import { GameEngine } from "../src/game";
 import { findOpenDirection, routeTo } from "./helpers";
 
@@ -100,6 +100,24 @@ describe("Dungeon Courier engine", () => {
     expect(afterSecond.player).toEqual(afterFirst.player);
     engine.step(DASH_COOLDOWN_FRAMES);
     expect(engine.getState().dashReady).toBe(true);
+  });
+
+  it("collects a courier charm that blocks enemy damage while active", () => {
+    const engine = new GameEngine("charm-shield");
+    const map = engine.getMap();
+    expect(map.charmSpawns).toHaveLength(1);
+
+    routeTo(engine, map.charmSpawns[0]);
+    const protectedState = engine.getState();
+    expect(protectedState.collectedCharms).toBe(1);
+    expect(protectedState.shieldActive).toBe(true);
+    expect(protectedState.shieldFrames).toBe(CHARM_SHIELD_FRAMES);
+
+    const enemy = protectedState.enemies[0];
+    routeTo(engine, enemy);
+    const afterHit = engine.getState();
+    expect(afterHit.lives).toBe(protectedState.lives);
+    expect(afterHit.status).toBe("playing");
   });
 
   it("has chasers pursue within detection range without crossing walls", () => {

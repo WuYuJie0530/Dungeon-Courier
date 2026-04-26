@@ -12,12 +12,14 @@ import {
 } from "./collision";
 import { generateDungeon } from "./map";
 import {
+  CHARM_SHIELD_FRAMES,
   DASH_COOLDOWN_FRAMES,
   DASH_DISTANCE_TILES,
   FPS,
   MAX_LEVEL,
   PLAYER_START_LIVES,
   TIME_LIMIT_SECONDS,
+  type Charm,
   type Direction,
   type Enemy,
   type EntitySnapshot,
@@ -38,6 +40,7 @@ export class GameEngine {
   private player: Player;
   private enemies: Enemy[];
   private letters: Letter[];
+  private charms: Charm[];
   private exit: Exit;
   private frame: number;
   private status: GameStatus;
@@ -52,6 +55,7 @@ export class GameEngine {
     this.player = this.createPlayer();
     this.enemies = [];
     this.letters = [];
+    this.charms = [];
     this.exit = { ...this.map.exit, open: false };
     this.frame = 0;
     this.status = "playing";
@@ -70,6 +74,12 @@ export class GameEngine {
     this.player = this.createPlayer();
     this.letters = this.map.letterSpawns.map((point, index) => ({
       id: `letter-${index}`,
+      x: point.x,
+      y: point.y,
+      collected: false,
+    }));
+    this.charms = this.map.charmSpawns.map((point, index) => ({
+      id: `charm-${index}`,
       x: point.x,
       y: point.y,
       collected: false,
@@ -162,6 +172,7 @@ export class GameEngine {
     if (isFloor(this.map, target.x, target.y)) {
       this.player.x = target.x;
       this.player.y = target.y;
+      this.collectCharmsAtPlayer();
       this.collectLettersAtPlayer();
       this.checkExit();
       this.checkEnemyCollision();
@@ -184,6 +195,7 @@ export class GameEngine {
       this.player.x = target.x;
       this.player.y = target.y;
       moved = true;
+      this.collectCharmsAtPlayer();
       this.collectLettersAtPlayer();
       this.checkExit();
       this.checkEnemyCollision();
@@ -216,8 +228,12 @@ export class GameEngine {
       status: this.status,
       collectedLetters: this.collectedLetters,
       totalLetters: this.letters.length,
+      collectedCharms: this.charms.filter((charm) => charm.collected).length,
+      totalCharms: this.charms.length,
       dashCooldownFrames: this.player.dashCooldownFrames,
       dashReady: this.player.dashCooldownFrames === 0,
+      shieldFrames: this.player.shieldFrames,
+      shieldActive: this.player.shieldFrames > 0,
     });
   }
 
@@ -230,6 +246,7 @@ export class GameEngine {
       player: this.player,
       enemies: this.enemies,
       letters: this.letters,
+      charms: this.charms,
       exit: this.exit,
     });
   }
@@ -241,6 +258,7 @@ export class GameEngine {
       lives: PLAYER_START_LIVES,
       dashCooldownFrames: 0,
       invulnerableFrames: 0,
+      shieldFrames: 0,
       lastDirection: "down",
     };
   }
@@ -249,6 +267,7 @@ export class GameEngine {
     this.frame += 1;
     this.player.dashCooldownFrames = Math.max(0, this.player.dashCooldownFrames - 1);
     this.player.invulnerableFrames = Math.max(0, this.player.invulnerableFrames - 1);
+    this.player.shieldFrames = Math.max(0, this.player.shieldFrames - 1);
 
     this.updateEnemies();
     this.checkEnemyCollision();
@@ -316,6 +335,15 @@ export class GameEngine {
     this.exit.open = this.collectedLetters === this.letters.length;
   }
 
+  private collectCharmsAtPlayer(): void {
+    for (const charm of this.charms) {
+      if (!charm.collected && samePoint(charm, this.player)) {
+        charm.collected = true;
+        this.player.shieldFrames = Math.max(this.player.shieldFrames, CHARM_SHIELD_FRAMES);
+      }
+    }
+  }
+
   private checkExit(): void {
     if (samePoint(this.player, this.exit) && this.exit.open) {
       this.status = this.level >= MAX_LEVEL ? "completed" : "won";
@@ -324,7 +352,7 @@ export class GameEngine {
   }
 
   private checkEnemyCollision(): void {
-    if (this.status !== "playing" || this.player.invulnerableFrames > 0) {
+    if (this.status !== "playing" || this.player.invulnerableFrames > 0 || this.player.shieldFrames > 0) {
       return;
     }
     const hit = this.enemies.some((enemy) => samePoint(enemy, this.player));
@@ -438,6 +466,7 @@ export function entityKeySet(snapshot: EntitySnapshot): Set<string> {
     keyOf(snapshot.player),
     ...snapshot.enemies.map(keyOf),
     ...snapshot.letters.filter((letter) => !letter.collected).map(keyOf),
+    ...snapshot.charms.filter((charm) => !charm.collected).map(keyOf),
     keyOf(snapshot.exit),
   ]);
 }

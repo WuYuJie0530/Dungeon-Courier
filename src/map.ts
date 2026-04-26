@@ -55,6 +55,7 @@ export function generateDungeon(seed: string): MapData {
   const exit = { ...exitRoom.center };
   const occupied = new Set<string>([keyOf(spawn), keyOf(exit)]);
   const letterSpawns = placeLetters(rooms, tiles, spawn, exit, occupied);
+  const charmSpawns = placeCharms(rooms, tiles, spawn, exit, occupied);
   const enemySpawns = placeEnemies(rooms, tiles, spawn, occupied, rng);
 
   const map: MapData = {
@@ -67,6 +68,7 @@ export function generateDungeon(seed: string): MapData {
     spawn,
     exit,
     letterSpawns,
+    charmSpawns,
     enemySpawns,
   };
 
@@ -158,6 +160,28 @@ function placeLetters(
   return letters;
 }
 
+function placeCharms(
+  rooms: Room[],
+  tiles: Tile[][],
+  spawn: GridPoint,
+  exit: GridPoint,
+  occupied: Set<string>,
+): GridPoint[] {
+  const candidateRooms = [...rooms]
+    .filter((room) => !sameGrid(room.center, spawn) && !sameGrid(room.center, exit))
+    .sort((a, b) => manhattan(a.center, spawn) - manhattan(b.center, spawn));
+
+  for (const room of candidateRooms) {
+    const point = roomCenterFallback(room, tiles, occupied) ?? firstOpenRoomPoint(room, tiles, occupied);
+    if (point) {
+      occupied.add(keyOf(point));
+      return [point];
+    }
+  }
+
+  throw new Error(`Unable to place courier charm for generated dungeon.`);
+}
+
 function placeEnemies(
   rooms: Room[],
   tiles: Tile[][],
@@ -202,6 +226,17 @@ function firstOpenRoomPoint(room: Room, tiles: Tile[][], occupied: Set<string>):
   return null;
 }
 
+function roomCenterFallback(room: Room, tiles: Tile[][], occupied: Set<string>): GridPoint | null {
+  const candidates: GridPoint[] = [
+    room.center,
+    { x: room.center.x - 1, y: room.center.y },
+    { x: room.center.x + 1, y: room.center.y },
+    { x: room.center.x, y: room.center.y - 1 },
+    { x: room.center.x, y: room.center.y + 1 },
+  ];
+  return candidates.find((point) => tiles[point.y]?.[point.x] === 1 && !occupied.has(keyOf(point))) ?? null;
+}
+
 function cornerOpenRoomPoint(room: Room, tiles: Tile[][], occupied: Set<string>): GridPoint | null {
   const candidates: GridPoint[] = [
     { x: room.x + 1, y: room.y + 1 },
@@ -230,6 +265,11 @@ function validateGeneratedMap(map: MapData): void {
   for (const letter of map.letterSpawns) {
     if (!isFloor(map, letter.x, letter.y)) {
       throw new Error(`Dungeon generated illegal letter for seed ${map.seed}.`);
+    }
+  }
+  for (const charm of map.charmSpawns) {
+    if (!isFloor(map, charm.x, charm.y)) {
+      throw new Error(`Dungeon generated illegal charm for seed ${map.seed}.`);
     }
   }
   for (const enemy of map.enemySpawns) {

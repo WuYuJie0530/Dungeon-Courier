@@ -36,6 +36,13 @@
             <div id="dashHud" class="dash-meter" aria-live="polite"></div>
           </div>
         </section>
+        <section class="hud-card">
+          <div class="hud-symbol shield-symbol" aria-hidden="true"></div>
+          <div>
+            <p>护符屏障</p>
+            <div id="shieldHud" class="shield-meter" aria-live="polite"></div>
+          </div>
+        </section>
         <section class="hud-card pause-card">
           <button id="pauseButton" class="pause-control" type="button" aria-label="暂停或继续">
             <span></span><span></span>
@@ -135,6 +142,7 @@
               <p id="resultPraise" class="result-praise"></p>
               <div class="result-actions">
                 <button id="overlayRetryButton" type="button">再次挑战</button>
+                <button id="resultLevelSelectButton" type="button" hidden>关卡进度</button>
                 <button id="overlayRestartButton" class="primary-result-action" type="button">进入下一关</button>
                 <button id="campaignRestartButton" type="button">返回第一关</button>
               </div>
@@ -151,12 +159,19 @@
 
           <section class="info-panel legend-panel">
             <h2>图例</h2>
-            <div><span class="legend-icon letter-legend"></span><span>信件</span></div>
-            <div><span class="legend-icon exit-legend"></span><span>出口</span></div>
-            <div><span class="legend-icon wall-legend"></span><span>墙体</span></div>
-            <div><span class="legend-icon chaser-legend"></span><span>追踪者</span></div>
-            <div><span class="legend-icon patrol-legend"></span><span>巡逻者</span></div>
-            <div><span class="legend-icon player-legend"></span><span>玩家</span></div>
+            <div class="legend-columns">
+              <div class="legend-column" aria-label="目标与地形图例">
+                <div><span class="legend-icon letter-legend"></span><span>信件</span></div>
+                <div><span class="legend-icon charm-legend"></span><span>护符</span></div>
+                <div><span class="legend-icon exit-legend"></span><span>出口</span></div>
+                <div><span class="legend-icon wall-legend"></span><span>墙体</span></div>
+              </div>
+              <div class="legend-column" aria-label="角色与敌人图例">
+                <div><span class="legend-icon chaser-legend"></span><span>追踪者</span></div>
+                <div><span class="legend-icon patrol-legend"></span><span>巡逻者</span></div>
+                <div><span class="legend-icon player-legend"></span><span>玩家</span></div>
+              </div>
+            </div>
           </section>
 
           <section class="info-panel restart-panel">
@@ -172,9 +187,9 @@
               <span>难度</span><strong id="difficultyHud">入门</strong>
               <span>追踪者</span><strong id="chaserCount">0</strong>
               <span>巡逻者</span><strong id="patrollerCount">0</strong>
+              <span>护符</span><strong id="charmCount">0 / 1</strong>
               <span>通关条件</span><strong>全信件</strong>
             </div>
-            <button id="restartButton" type="button">重新开始本关</button>
           </section>
         </aside>
       </main>

@@ -2,10 +2,10 @@ import { GameEngine } from "./game";
 import { Renderer } from "./render";
 import { installTestApi } from "./testApi";
 import {
+  CHARM_SHIELD_FRAMES,
   DASH_COOLDOWN_FRAMES,
   MAX_LEVEL,
   PLAYER_START_LIVES,
-  TIME_LIMIT_SECONDS,
   type Direction,
   type GameStateSnapshot,
 } from "./types";
@@ -16,9 +16,9 @@ const appShell = requiredElement<HTMLDivElement>("app");
 const canvas = requiredElement<HTMLCanvasElement>("gameCanvas");
 const renderer = new Renderer(canvas);
 const pauseButton = requiredElement<HTMLButtonElement>("pauseButton");
-const restartButton = requiredElement<HTMLButtonElement>("restartButton");
 const overlayRestartButton = requiredElement<HTMLButtonElement>("overlayRestartButton");
 const overlayRetryButton = requiredElement<HTMLButtonElement>("overlayRetryButton");
+const resultLevelSelectButton = requiredElement<HTMLButtonElement>("resultLevelSelectButton");
 const campaignRestartButton = requiredElement<HTMLButtonElement>("campaignRestartButton");
 const levelSelectButton = requiredElement<HTMLButtonElement>("levelSelectButton");
 const levelSelectOverlay = requiredElement<HTMLDivElement>("levelSelectOverlay");
@@ -39,12 +39,14 @@ const hud = {
   timer: requiredElement<HTMLSpanElement>("timerHud"),
   letters: requiredElement<HTMLSpanElement>("lettersHud"),
   dash: requiredElement<HTMLSpanElement>("dashHud"),
+  shield: requiredElement<HTMLSpanElement>("shieldHud"),
   pause: requiredElement<HTMLSpanElement>("pauseHud"),
   level: requiredElement<HTMLElement>("levelHud"),
   difficulty: requiredElement<HTMLElement>("difficultyHud"),
   objective: requiredElement<HTMLElement>("objectiveText"),
   chasers: requiredElement<HTMLElement>("chaserCount"),
   patrollers: requiredElement<HTMLElement>("patrollerCount"),
+  charms: requiredElement<HTMLElement>("charmCount"),
 };
 
 let deterministicTestMode = false;
@@ -64,11 +66,6 @@ installTestApi(
   renderNow,
 );
 
-restartButton.addEventListener("click", () => {
-  engine.restartLevel();
-  renderNow();
-});
-
 overlayRestartButton.addEventListener("click", () => {
   const status = engine.getState().status;
   if (status === "won") {
@@ -84,6 +81,10 @@ overlayRestartButton.addEventListener("click", () => {
 overlayRetryButton.addEventListener("click", () => {
   engine.restartLevel();
   renderNow();
+});
+
+resultLevelSelectButton.addEventListener("click", () => {
+  openLevelSelect();
 });
 
 campaignRestartButton.addEventListener("click", () => {
@@ -174,14 +175,16 @@ function updateHud(state: GameStateSnapshot): void {
   const chasers = state.enemies.filter((enemy) => enemy.kind === "chaser").length;
   const patrollers = state.enemies.length - chasers;
   hud.lives.replaceChildren(...createLifePips(state.lives));
-  hud.timer.textContent = `${formatClock(state.timeRemaining)} / ${formatClock(TIME_LIMIT_SECONDS)}`;
+  hud.timer.textContent = formatClock(state.timeRemaining);
   hud.letters.textContent = `${pad2(state.collectedLetters)} / ${pad2(state.totalLetters)}`;
   hud.dash.replaceChildren(...createDashMeter(state.dashCooldownFrames));
+  hud.shield.replaceChildren(...createShieldMeter(state.shieldFrames, state.totalCharms - state.collectedCharms));
   hud.pause.textContent = statusLabel(state.status);
   hud.level.textContent = `第 ${state.level} 关`;
   hud.difficulty.textContent = state.difficultyName;
   hud.chasers.textContent = String(chasers);
   hud.patrollers.textContent = String(patrollers);
+  hud.charms.textContent = `${state.collectedCharms} / ${state.totalCharms}`;
   appShell.classList.toggle("is-failed-state", state.status === "lost");
   appShell.classList.toggle("is-success-state", state.status === "won" || state.status === "completed");
   hud.objective.textContent =
@@ -191,9 +194,11 @@ function updateHud(state: GameStateSnapshot): void {
         ? `第 ${state.level} 关完成。进入下一关继续派送。`
       : state.status === "lost"
         ? "本关失败。复盘路线，重新突破。"
-        : state.exit.open
-          ? "出口已经开启，立刻撤离。"
-          : "收集所有信件，然后抵达出口。";
+        : state.shieldActive
+          ? "护符屏障生效，利用窗口穿过危险区域。"
+          : state.exit.open
+            ? "出口已经开启，立刻撤离。"
+            : "收集所有信件，然后抵达出口。";
   pauseButton.classList.toggle("is-playing", state.status === "paused");
   levelSelectButton.setAttribute("aria-expanded", String(!levelSelectOverlay.hidden));
   if (!levelSelectOverlay.hidden) {
@@ -277,6 +282,8 @@ function updateResultOverlay(state: GameStateSnapshot): void {
       : "别急，失败乃潜行之常态。复盘路线，再次尝试突破。";
   overlayRetryButton.textContent = failedLevel ? "再次挑战" : "重玩本关";
   overlayRestartButton.textContent = completedCampaign ? "重新挑战五关" : wonLevel ? "进入下一关" : "重新开始本关";
+  resultLevelSelectButton.hidden = !failedLevel;
+  overlayRestartButton.hidden = failedLevel;
   campaignRestartButton.hidden = failedLevel;
 }
 
@@ -300,6 +307,20 @@ function createDashMeter(cooldownFrames: number): HTMLElement[] {
   const text = document.createElement("span");
   text.className = "dash-text";
   text.textContent = cooldownFrames === 0 ? "就绪" : `${(cooldownFrames / 60).toFixed(1)}秒`;
+  return [...cells, text];
+}
+
+function createShieldMeter(shieldFrames: number, remainingCharms: number): HTMLElement[] {
+  const shieldRatio = shieldFrames === 0 ? 0 : shieldFrames / CHARM_SHIELD_FRAMES;
+  const activeCells = Math.max(0, Math.min(5, Math.ceil(shieldRatio * 5)));
+  const cells = Array.from({ length: 5 }, (_, index) => {
+    const cell = document.createElement("span");
+    cell.className = index < activeCells ? "shield-cell active" : "shield-cell";
+    return cell;
+  });
+  const text = document.createElement("span");
+  text.className = "shield-text";
+  text.textContent = shieldFrames > 0 ? `${(shieldFrames / 60).toFixed(1)}秒` : remainingCharms > 0 ? "待拾取" : "已用完";
   return [...cells, text];
 }
 
