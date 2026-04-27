@@ -1,25 +1,25 @@
 export type SoundEvent = "pickup" | "unlock" | "hit" | "dash" | "win" | "lose" | "click";
 
 const SOUND_PATHS: Record<SoundEvent, string> = {
-  pickup: assetPath("sounds/pickup.mp3"),
-  unlock: assetPath("sounds/unlock.mp3"),
-  hit: assetPath("sounds/hit.mp3"),
-  dash: assetPath("sounds/dash.mp3"),
-  win: assetPath("sounds/win.mp3"),
-  lose: assetPath("sounds/lose.mp3"),
-  click: assetPath("sounds/click.mp3"),
+  pickup: assetPath("sounds/pickup.wav"),
+  unlock: assetPath("sounds/unlock.wav"),
+  hit: assetPath("sounds/hit.wav"),
+  dash: assetPath("sounds/dash.wav"),
+  win: assetPath("sounds/win.wav"),
+  lose: assetPath("sounds/lose.wav"),
+  click: assetPath("sounds/click.wav"),
 };
 
 const MUSIC_PATH = assetPath("music/dungeon-loop.wav");
 
 const SOUND_VOLUMES: Record<SoundEvent, number> = {
-  pickup: 0.42,
-  unlock: 0.48,
-  hit: 0.44,
-  dash: 0.34,
-  win: 0.5,
-  lose: 0.46,
-  click: 0.24,
+  pickup: 0.72,
+  unlock: 0.74,
+  hit: 0.68,
+  dash: 0.62,
+  win: 0.78,
+  lose: 0.72,
+  click: 0.42,
 };
 
 const SYNTH_PROFILES: Record<SoundEvent, { frequency: number; endFrequency: number; duration: number; volume: number }> = {
@@ -62,7 +62,7 @@ export class AudioManager {
     this.music = new Audio(MUSIC_PATH);
     this.music.loop = true;
     this.music.preload = "auto";
-    this.music.volume = 0.16;
+    this.music.volume = 0.34;
     this.music.muted = this.muted;
   }
 

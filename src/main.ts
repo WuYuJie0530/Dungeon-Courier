@@ -68,6 +68,15 @@ function renderNow(): void {
 audio.load();
 updateSoundButton();
 
+window.addEventListener(
+  "pointerdown",
+  () => {
+    audio.enableMusic();
+    audio.updateMusic(engine.getState().status);
+  },
+  { passive: true },
+);
+
 installTestApi(
   engine,
   () => {
