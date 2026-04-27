@@ -35,8 +35,7 @@ const SYNTH_PROFILES: Record<SoundEvent, { frequency: number; endFrequency: numb
 const MUTED_STORAGE_KEY = "dungeon-courier-muted";
 
 function assetPath(path: string): string {
-  const meta = import.meta as ImportMeta & { env?: { BASE_URL?: string } };
-  return `${meta.env?.BASE_URL ?? "/"}${path}`;
+  return new URL(path, document.baseURI).href;
 }
 
 export class AudioManager {
