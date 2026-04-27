@@ -19,6 +19,12 @@ const canvas = requiredElement<HTMLCanvasElement>("gameCanvas");
 const renderer = new Renderer(canvas);
 const pauseButton = requiredElement<HTMLButtonElement>("pauseButton");
 const soundButton = requiredElement<HTMLButtonElement>("soundButton");
+const soundPanel = requiredElement<HTMLDivElement>("soundPanel");
+const muteButton = requiredElement<HTMLButtonElement>("muteButton");
+const sfxVolumeInput = requiredElement<HTMLInputElement>("sfxVolumeInput");
+const sfxVolumeValue = requiredElement<HTMLOutputElement>("sfxVolumeValue");
+const musicVolumeInput = requiredElement<HTMLInputElement>("musicVolumeInput");
+const musicVolumeValue = requiredElement<HTMLOutputElement>("musicVolumeValue");
 const overlayRestartButton = requiredElement<HTMLButtonElement>("overlayRestartButton");
 const overlayRetryButton = requiredElement<HTMLButtonElement>("overlayRetryButton");
 const resultLevelSelectButton = requiredElement<HTMLButtonElement>("resultLevelSelectButton");
@@ -67,6 +73,7 @@ function renderNow(): void {
 
 audio.load();
 updateSoundButton();
+updateVolumePanel();
 
 window.addEventListener(
   "pointerdown",
@@ -146,12 +153,34 @@ pauseButton.addEventListener("click", () => {
 
 soundButton.addEventListener("click", () => {
   audio.enableMusic();
+  audio.play("click");
+  setSoundPanelOpen(soundPanel.hidden);
+});
+
+muteButton.addEventListener("click", () => {
+  audio.enableMusic();
   const muted = audio.toggleMuted();
-  updateSoundButton();
+  updateVolumePanel();
   if (!muted) {
     audio.play("click");
     audio.updateMusic(engine.getState().status);
   }
+});
+
+sfxVolumeInput.addEventListener("input", () => {
+  audio.setSfxVolume(Number(sfxVolumeInput.value) / 100);
+  updateVolumePanel();
+});
+
+sfxVolumeInput.addEventListener("change", () => {
+  audio.enableMusic();
+  audio.play("click");
+});
+
+musicVolumeInput.addEventListener("input", () => {
+  audio.setMusicVolume(Number(musicVolumeInput.value) / 100);
+  updateVolumePanel();
+  audio.updateMusic(engine.getState().status);
 });
 
 window.addEventListener("keydown", (event) => {
@@ -246,6 +275,26 @@ function updateSoundButton(): void {
   const muted = audio.isMuted();
   soundButton.textContent = muted ? "🔇 Muted" : "🔊 Sound";
   soundButton.setAttribute("aria-pressed", String(muted));
+}
+
+function setSoundPanelOpen(open: boolean): void {
+  soundPanel.hidden = !open;
+  soundButton.setAttribute("aria-expanded", String(open));
+  updateVolumePanel();
+}
+
+function updateVolumePanel(): void {
+  const settings = audio.getSettings();
+  const sfxPercent = Math.round(settings.sfxVolume * 100);
+  const musicPercent = Math.round(settings.musicVolume * 100);
+
+  updateSoundButton();
+  muteButton.textContent = settings.muted ? "🔇 Muted" : "🔊 Sound";
+  muteButton.setAttribute("aria-pressed", String(settings.muted));
+  sfxVolumeInput.value = String(sfxPercent);
+  musicVolumeInput.value = String(musicPercent);
+  sfxVolumeValue.textContent = `${sfxPercent}%`;
+  musicVolumeValue.textContent = `${musicPercent}%`;
 }
 
 function updateHud(state: GameStateSnapshot): void {
