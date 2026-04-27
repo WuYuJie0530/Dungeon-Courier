@@ -1,16 +1,16 @@
 export type SoundEvent = "pickup" | "unlock" | "hit" | "dash" | "win" | "lose" | "click";
 
 const SOUND_PATHS: Record<SoundEvent, string> = {
-  pickup: "/sounds/pickup.mp3",
-  unlock: "/sounds/unlock.mp3",
-  hit: "/sounds/hit.mp3",
-  dash: "/sounds/dash.mp3",
-  win: "/sounds/win.mp3",
-  lose: "/sounds/lose.mp3",
-  click: "/sounds/click.mp3",
+  pickup: assetPath("sounds/pickup.mp3"),
+  unlock: assetPath("sounds/unlock.mp3"),
+  hit: assetPath("sounds/hit.mp3"),
+  dash: assetPath("sounds/dash.mp3"),
+  win: assetPath("sounds/win.mp3"),
+  lose: assetPath("sounds/lose.mp3"),
+  click: assetPath("sounds/click.mp3"),
 };
 
-const MUSIC_PATH = "/music/dungeon-loop.wav";
+const MUSIC_PATH = assetPath("music/dungeon-loop.wav");
 
 const SOUND_VOLUMES: Record<SoundEvent, number> = {
   pickup: 0.42,
@@ -33,6 +33,11 @@ const SYNTH_PROFILES: Record<SoundEvent, { frequency: number; endFrequency: numb
 };
 
 const MUTED_STORAGE_KEY = "dungeon-courier-muted";
+
+function assetPath(path: string): string {
+  const meta = import.meta as ImportMeta & { env?: { BASE_URL?: string } };
+  return `${meta.env?.BASE_URL ?? "/"}${path}`;
+}
 
 export class AudioManager {
   private readonly pools = new Map<SoundEvent, HTMLAudioElement[]>();
