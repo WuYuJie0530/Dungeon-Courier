@@ -59,19 +59,24 @@
           <section class="info-panel intel-panel">
             <h2>敌人情报</h2>
             <div class="enemy-card">
-              <span class="enemy-avatar patrol-avatar" aria-hidden="true"></span>
-              <div>
+              <div class="enemy-visual" aria-hidden="true">
+                <span class="enemy-avatar patrol-avatar"></span>
+                <div class="enemy-route enemy-route-short"></div>
+              </div>
+              <div class="enemy-copy">
                 <strong>巡逻者</strong>
                 <p>沿固定方向巡逻，遇到墙体后转向。</p>
-                <div class="enemy-route" aria-hidden="true"></div>
+                <div class="enemy-route enemy-route-long" aria-hidden="true"></div>
               </div>
             </div>
             <div class="enemy-card">
-              <span class="enemy-avatar chaser-avatar" aria-hidden="true"></span>
-              <div>
+              <div class="enemy-visual" aria-hidden="true">
+                <span class="enemy-avatar chaser-avatar"></span>
+                <div class="vision-cone"></div>
+              </div>
+              <div class="enemy-copy">
                 <strong>追踪者</strong>
-                <p>进入视野后会追踪你，被其发现则失败风险上升。</p>
-                <div class="vision-cone" aria-hidden="true"></div>
+                <p>进入视野后会追踪你，被其发现则失败。</p>
               </div>
             </div>
           </section>
