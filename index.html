@@ -4,11 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dungeon Courier</title>
-    <script type="module" crossorigin src="/Dungeon-Courier/assets/index-BmP98Qr4.js"></script>
-    <link rel="stylesheet" crossorigin href="/Dungeon-Courier/assets/index-C4e8OPp-.css">
+    <script type="module" crossorigin src="/Dungeon-Courier/assets/index-Ba-8tKO9.js"></script>
+    <link rel="stylesheet" crossorigin href="/Dungeon-Courier/assets/index-BO4HOkha.css">
   </head>
   <body>
     <div id="app" class="game-shell">
+      <div id="startOverlay" class="start-overlay" aria-label="游戏开始页">
+        <section class="start-card">
+          <div class="start-title-block">
+            <p class="start-kicker">Dungeon Courier</p>
+            <h1>地牢信使</h1>
+            <strong>Dungeon Courier</strong>
+          </div>
+          <div class="start-actions" aria-label="主菜单">
+            <button id="startGameButton" class="start-action primary-start-action" type="button">开始游戏</button>
+            <button id="startHelpButton" class="start-action" type="button" aria-expanded="false" aria-controls="startHelpPanel">
+              操作说明
+            </button>
+            <button id="startLevelSelectButton" class="start-action" type="button">关卡选择</button>
+          </div>
+          <div id="startHelpPanel" class="start-help-panel" hidden>
+            <div class="start-help-head">
+              <h2>操作说明</h2>
+              <button id="startHelpClose" class="start-help-close" type="button" aria-label="关闭操作说明">×</button>
+            </div>
+            <div class="control-row"><kbd>W A S D</kbd><span>移动</span></div>
+            <div class="control-row"><kbd>↑ ↓ ← →</kbd><span>移动</span></div>
+            <div class="control-row"><kbd>Shift</kbd><span>冲刺</span></div>
+            <div class="control-row"><kbd>P</kbd><span>暂停 / 继续</span></div>
+            <div class="control-row"><kbd>R</kbd><span>重开关卡</span></div>
+          </div>
+        </section>
+      </div>
       <header class="hudbar" aria-label="游戏状态">
         <section class="hud-card lives-card">
           <div class="hud-symbol heart-symbol" aria-hidden="true"></div>
