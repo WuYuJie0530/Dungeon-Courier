@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findPath, isFloor } from "../src/collision";
-import { generateDungeon } from "../src/map";
+import { generateDungeon, generateTutorialDungeon } from "../src/map";
 import { mapSignature } from "./helpers";
 
 describe("deterministic dungeon generation", () => {
@@ -33,5 +33,22 @@ describe("deterministic dungeon generation", () => {
     expect(map.charmSpawns).toHaveLength(1);
     expect(map.enemySpawns.some((enemy) => enemy.kind === "chaser")).toBe(true);
     expect(map.enemySpawns.some((enemy) => enemy.kind === "patroller")).toBe(true);
+  });
+
+  it("creates a legal fixed tutorial dungeon", () => {
+    const map = generateTutorialDungeon();
+    const points = [map.spawn, map.exit, ...map.letterSpawns, ...map.charmSpawns, ...map.enemySpawns];
+
+    expect(map.rooms.length).toBeGreaterThanOrEqual(5);
+    expect(map.letterSpawns).toHaveLength(3);
+    expect(map.charmSpawns).toHaveLength(1);
+    expect(map.enemySpawns.some((enemy) => enemy.kind === "chaser")).toBe(true);
+    expect(map.enemySpawns.some((enemy) => enemy.kind === "patroller")).toBe(true);
+    expect(findPath(map, map.spawn, map.exit)).not.toBeNull();
+    for (const point of points) {
+      expect(isFloor(map, point.x, point.y)).toBe(true);
+      expect(findPath(map, map.spawn, point)).not.toBeNull();
+    }
+    expect(mapSignature(map)).toBe(mapSignature(generateTutorialDungeon()));
   });
 });

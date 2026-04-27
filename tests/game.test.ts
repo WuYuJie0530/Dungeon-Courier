@@ -1,10 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { DIRECTIONS, findPath, isFloor, nextPoint } from "../src/collision";
+import { DIRECTIONS, findPath, isFloor, manhattan, nextPoint } from "../src/collision";
 import { CHARM_SHIELD_FRAMES, DASH_COOLDOWN_FRAMES, FPS, MAX_LEVEL, TIME_LIMIT_SECONDS } from "../src/types";
 import { GameEngine } from "../src/game";
-import { findOpenDirection, routeTo } from "./helpers";
+import { generateTutorialDungeon } from "../src/map";
+import { findOpenDirection, mapSignature, routeTo } from "./helpers";
 
 describe("Dungeon Courier engine", () => {
+  it("uses a fixed tutorial layout for the first campaign level", () => {
+    const engine = new GameEngine();
+    const map = engine.getMap();
+    const state = engine.getState();
+
+    expect(mapSignature(map)).toBe(mapSignature(generateTutorialDungeon()));
+    expect(map.letterSpawns).toEqual([
+      { x: 8, y: 5 },
+      { x: 16, y: 14 },
+      { x: 30, y: 14 },
+    ]);
+    expect(map.charmSpawns).toEqual([{ x: 22, y: 14 }]);
+    expect(state.enemies).toHaveLength(2);
+    expect(state.enemies.some((enemy) => enemy.kind === "chaser")).toBe(true);
+    expect(state.enemies.some((enemy) => enemy.kind === "patroller")).toBe(true);
+
+    const firstLetterPath = findPath(map, state.player, map.letterSpawns[0]);
+    expect(firstLetterPath).not.toBeNull();
+    expect(firstLetterPath!.length).toBeLessThanOrEqual(4);
+    expect(state.enemies.every((enemy) => manhattan(enemy, state.player) > 8)).toBe(true);
+
+    engine.nextLevel();
+    expect(mapSignature(engine.getMap())).not.toBe(mapSignature(generateTutorialDungeon()));
+  });
+
   it("keeps the player out of walls and map boundaries", () => {
     const engine = new GameEngine("walls");
     for (let i = 0; i < 80; i += 1) {

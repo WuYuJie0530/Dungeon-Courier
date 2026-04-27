@@ -15,6 +15,12 @@ import "./style.css";
 const engine = new GameEngine();
 const audio = new AudioManager();
 const appShell = requiredElement<HTMLDivElement>("app");
+const startOverlay = requiredElement<HTMLDivElement>("startOverlay");
+const startGameButton = requiredElement<HTMLButtonElement>("startGameButton");
+const startHelpButton = requiredElement<HTMLButtonElement>("startHelpButton");
+const startLevelSelectButton = requiredElement<HTMLButtonElement>("startLevelSelectButton");
+const startHelpPanel = requiredElement<HTMLDivElement>("startHelpPanel");
+const startHelpClose = requiredElement<HTMLButtonElement>("startHelpClose");
 const canvas = requiredElement<HTMLCanvasElement>("gameCanvas");
 const renderer = new Renderer(canvas);
 const pauseButton = requiredElement<HTMLButtonElement>("pauseButton");
@@ -59,12 +65,15 @@ const hud = {
 };
 
 let deterministicTestMode = false;
+let gameStarted = false;
 let levelSelectRenderKey = "";
 let lastAudioState: GameStateSnapshot | null = null;
 
 function renderNow(): void {
   const state = engine.getState();
-  playStateAudio(lastAudioState, state);
+  if (gameStarted) {
+    playStateAudio(lastAudioState, state);
+  }
   lastAudioState = state;
   audio.updateMusic(state.status);
   renderer.render(engine.getMap(), state);
@@ -78,8 +87,7 @@ updateVolumePanel();
 window.addEventListener(
   "pointerdown",
   () => {
-    audio.enableMusic();
-    audio.updateMusic(engine.getState().status);
+    unlockMusic();
   },
   { passive: true },
 );
@@ -91,6 +99,28 @@ installTestApi(
   },
   renderNow,
 );
+
+startGameButton.addEventListener("click", () => {
+  beginGame();
+});
+
+startHelpButton.addEventListener("click", () => {
+  unlockMusic();
+  audio.play("click");
+  setStartHelpOpen(startHelpPanel.hidden);
+});
+
+startHelpClose.addEventListener("click", () => {
+  unlockMusic();
+  audio.play("click");
+  setStartHelpOpen(false);
+});
+
+startLevelSelectButton.addEventListener("click", () => {
+  unlockMusic();
+  audio.play("click");
+  openLevelSelect();
+});
 
 overlayRestartButton.addEventListener("click", () => {
   audio.enableMusic();
@@ -184,6 +214,18 @@ musicVolumeInput.addEventListener("input", () => {
 });
 
 window.addEventListener("keydown", (event) => {
+  unlockMusic();
+  if (!gameStarted) {
+    if (event.key === "Escape") {
+      if (!levelSelectOverlay.hidden) {
+        closeLevelSelect();
+      } else if (!startHelpPanel.hidden) {
+        setStartHelpOpen(false);
+      }
+    }
+    return;
+  }
+
   audio.enableMusic();
   const direction = directionFromKey(event.key);
   if (direction) {
@@ -229,7 +271,7 @@ function loop(now: number): void {
   const elapsed = Math.min(0.25, (now - lastTime) / 1000);
   lastTime = now;
 
-  if (!deterministicTestMode) {
+  if (!deterministicTestMode && gameStarted) {
     frameAccumulator += elapsed * 60;
     const frames = Math.floor(frameAccumulator);
     if (frames > 0) {
@@ -297,6 +339,27 @@ function updateVolumePanel(): void {
   musicVolumeValue.textContent = `${musicPercent}%`;
 }
 
+function beginGame(playFeedback = true): void {
+  gameStarted = true;
+  startOverlay.hidden = true;
+  setStartHelpOpen(false);
+  unlockMusic();
+  if (playFeedback) {
+    audio.play("click");
+  }
+  renderNow();
+}
+
+function unlockMusic(): void {
+  audio.enableMusic();
+  audio.updateMusic(engine.getState().status);
+}
+
+function setStartHelpOpen(open: boolean): void {
+  startHelpPanel.hidden = !open;
+  startHelpButton.setAttribute("aria-expanded", String(open));
+}
+
 function updateHud(state: GameStateSnapshot): void {
   const chasers = state.enemies.filter((enemy) => enemy.kind === "chaser").length;
   const patrollers = state.enemies.length - chasers;
@@ -313,18 +376,7 @@ function updateHud(state: GameStateSnapshot): void {
   hud.charms.textContent = `${state.collectedCharms} / ${state.totalCharms}`;
   appShell.classList.toggle("is-failed-state", state.status === "lost");
   appShell.classList.toggle("is-success-state", state.status === "won" || state.status === "completed");
-  hud.objective.textContent =
-    state.status === "completed"
-      ? "五关任务全部完成，地牢邮路已打通。"
-      : state.status === "won"
-        ? `第 ${state.level} 关完成。进入下一关继续派送。`
-      : state.status === "lost"
-        ? "本关失败。复盘路线，重新突破。"
-        : state.shieldActive
-          ? "护符屏障生效，利用窗口穿过危险区域。"
-          : state.exit.open
-            ? "出口已经开启，立刻撤离。"
-            : "收集所有信件，然后抵达出口。";
+  hud.objective.textContent = objectiveText(state);
   pauseButton.classList.toggle("is-playing", state.status === "paused");
   levelSelectButton.setAttribute("aria-expanded", String(!levelSelectOverlay.hidden));
   if (!levelSelectOverlay.hidden) {
@@ -337,12 +389,14 @@ function updateHud(state: GameStateSnapshot): void {
 function openLevelSelect(): void {
   levelSelectOverlay.hidden = false;
   levelSelectButton.setAttribute("aria-expanded", "true");
+  startLevelSelectButton.setAttribute("aria-expanded", "true");
   renderLevelSelect(engine.getState());
 }
 
 function closeLevelSelect(): void {
   levelSelectOverlay.hidden = true;
   levelSelectButton.setAttribute("aria-expanded", "false");
+  startLevelSelectButton.setAttribute("aria-expanded", "false");
 }
 
 function renderLevelSelect(state: GameStateSnapshot): void {
@@ -376,6 +430,9 @@ function renderLevelSelect(state: GameStateSnapshot): void {
           audio.play("click");
           engine.selectLevel(level);
           closeLevelSelect();
+          if (!gameStarted) {
+            beginGame(false);
+          }
           renderNow();
         });
       }
@@ -413,6 +470,37 @@ function updateResultOverlay(state: GameStateSnapshot): void {
   resultLevelSelectButton.hidden = !failedLevel;
   overlayRestartButton.hidden = failedLevel;
   campaignRestartButton.hidden = failedLevel;
+}
+
+function objectiveText(state: GameStateSnapshot): string {
+  if (state.status === "completed") {
+    return "五关任务全部完成，地牢邮路已打通。";
+  }
+  if (state.status === "won") {
+    return `第 ${state.level} 关完成。进入下一关继续派送。`;
+  }
+  if (state.status === "lost") {
+    return "本关失败。复盘路线，重新突破。";
+  }
+  if (state.level === 1) {
+    if (state.exit.open) {
+      return "信件已收齐，前往出口完成派送。";
+    }
+    if (state.collectedLetters === 0) {
+      return "先收集附近的第一封信。";
+    }
+    if (state.collectedLetters === 1) {
+      return "出口还未开启，继续寻找剩余信件。";
+    }
+    return "最后一封信在危险区附近，必要时使用护符或冲刺。";
+  }
+  if (state.shieldActive) {
+    return "护符屏障生效，利用窗口穿过危险区域。";
+  }
+  if (state.exit.open) {
+    return "出口已经开启，立刻撤离。";
+  }
+  return "收集所有信件，然后抵达出口。";
 }
 
 function createLifePips(lives: number): HTMLElement[] {

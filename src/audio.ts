@@ -171,18 +171,13 @@ export class AudioManager {
     this.musicEnabled = true;
   }
 
-  updateMusic(status: "playing" | "paused" | "won" | "lost" | "completed"): void {
-    if (!this.musicEnabled || this.muted) {
+  updateMusic(_status: "playing" | "paused" | "won" | "lost" | "completed"): void {
+    if (!this.musicEnabled || this.muted || this.musicVolume <= 0) {
+      this.pauseMusic();
       return;
     }
 
-    if (status === "playing") {
-      this.playMusic();
-    } else if (status === "paused") {
-      this.pauseMusic();
-    } else {
-      this.stopMusic();
-    }
+    this.playMusic();
   }
 
   private playMusic(): void {

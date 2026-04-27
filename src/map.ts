@@ -76,6 +76,55 @@ export function generateDungeon(seed: string): MapData {
   return map;
 }
 
+export function generateTutorialDungeon(seed = "courier-level-001"): MapData {
+  const tiles = createWallGrid();
+  const rooms: Room[] = [
+    { id: 0, x: 2, y: 3, w: 8, h: 5, center: { x: 6, y: 5 } },
+    { id: 1, x: 12, y: 3, w: 8, h: 5, center: { x: 16, y: 5 } },
+    { id: 2, x: 24, y: 3, w: 9, h: 5, center: { x: 28, y: 5 } },
+    { id: 3, x: 12, y: 11, w: 8, h: 6, center: { x: 16, y: 14 } },
+    { id: 4, x: 24, y: 11, w: 9, h: 6, center: { x: 28, y: 14 } },
+    { id: 5, x: 11, y: 19, w: 10, h: 5, center: { x: 16, y: 21 } },
+    { id: 6, x: 25, y: 19, w: 9, h: 5, center: { x: 29, y: 21 } },
+  ];
+
+  for (const room of rooms) {
+    digRoom(tiles, room);
+  }
+
+  digHorizontal(tiles, 6, 28, 5);
+  digVertical(tiles, 16, 14, 5);
+  digHorizontal(tiles, 16, 28, 14);
+  digVertical(tiles, 5, 14, 28);
+  digVertical(tiles, 14, 21, 16);
+  digHorizontal(tiles, 16, 29, 21);
+  digVertical(tiles, 14, 21, 29);
+
+  const map: MapData = {
+    seed,
+    width: MAP_WIDTH,
+    height: MAP_HEIGHT,
+    tileSize: TILE_SIZE,
+    tiles,
+    rooms,
+    spawn: { x: 5, y: 5 },
+    exit: { x: 18, y: 5 },
+    letterSpawns: [
+      { x: 8, y: 5 },
+      { x: 16, y: 14 },
+      { x: 30, y: 14 },
+    ],
+    charmSpawns: [{ x: 22, y: 14 }],
+    enemySpawns: [
+      { id: "chaser-tutorial", kind: "chaser", x: 30, y: 20, direction: "up" },
+      { id: "patroller-tutorial", kind: "patroller", x: 31, y: 13, direction: "left" },
+    ],
+  };
+
+  validateGeneratedMap(map);
+  return map;
+}
+
 function createWallGrid(): Tile[][] {
   return Array.from({ length: MAP_HEIGHT }, () => Array.from({ length: MAP_WIDTH }, () => 0 as Tile));
 }

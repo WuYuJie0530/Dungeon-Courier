@@ -18,6 +18,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
   await page.addScriptTag({ content: browserHelperScript });
+  await page.click("#startGameButton");
 });
 
 test("browser API exposes deterministic seed control", async ({ page }) => {

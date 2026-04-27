@@ -10,7 +10,7 @@ import {
   rotateClockwise,
   samePoint,
 } from "./collision";
-import { generateDungeon } from "./map";
+import { generateDungeon, generateTutorialDungeon } from "./map";
 import {
   CHARM_SHIELD_FRAMES,
   DASH_COOLDOWN_FRAMES,
@@ -51,7 +51,7 @@ export class GameEngine {
     this.unlockedLevel = 1;
     this.seed = seed;
     this.nextSeed = seed;
-    this.map = generateDungeon(seed);
+    this.map = this.createMap(seed);
     this.player = this.createPlayer();
     this.enemies = [];
     this.letters = [];
@@ -70,7 +70,7 @@ export class GameEngine {
   restart(seed = this.nextSeed): GameStateSnapshot {
     this.seed = String(seed);
     this.nextSeed = this.seed;
-    this.map = generateDungeon(this.seed);
+    this.map = this.createMap(this.seed);
     this.player = this.createPlayer();
     this.letters = this.map.letterSpawns.map((point, index) => ({
       id: `letter-${index}`,
@@ -261,6 +261,13 @@ export class GameEngine {
       shieldFrames: 0,
       lastDirection: "down",
     };
+  }
+
+  private createMap(seed: string): MapData {
+    if (this.level === 1 && seed === levelSeed(1)) {
+      return generateTutorialDungeon(seed);
+    }
+    return generateDungeon(seed);
   }
 
   private stepOneFrame(): void {
