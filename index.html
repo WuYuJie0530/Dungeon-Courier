@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dungeon Courier</title>
-    <script type="module" crossorigin src="/Dungeon-Courier/assets/index-erWzrZWU.js"></script>
-    <link rel="stylesheet" crossorigin href="/Dungeon-Courier/assets/index-33Kne5AV.css">
+    <script type="module" crossorigin src="/Dungeon-Courier/assets/index-BmP98Qr4.js"></script>
+    <link rel="stylesheet" crossorigin href="/Dungeon-Courier/assets/index-C4e8OPp-.css">
   </head>
   <body>
     <div id="app" class="game-shell">
@@ -52,7 +52,49 @@
           <div>
             <p id="pauseHud">进行中</p>
             <small>按 P 暂停 / 继续</small>
-            <button id="soundButton" class="sound-toggle" type="button" aria-pressed="false">🔊 Sound</button>
+            <div class="sound-control">
+              <button
+                id="soundButton"
+                class="sound-toggle"
+                type="button"
+                aria-pressed="false"
+                aria-expanded="false"
+                aria-controls="soundPanel"
+              >
+                🔊 Sound
+              </button>
+              <div id="soundPanel" class="sound-panel" hidden>
+                <button id="muteButton" class="mute-toggle" type="button" aria-pressed="false">🔊 Sound</button>
+                <label class="volume-row" for="sfxVolumeInput">
+                  <span>音效</span>
+                  <output id="sfxVolumeValue" for="sfxVolumeInput">100%</output>
+                </label>
+                <input
+                  id="sfxVolumeInput"
+                  class="volume-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="100"
+                  aria-label="音效音量"
+                />
+                <label class="volume-row" for="musicVolumeInput">
+                  <span>音乐</span>
+                  <output id="musicVolumeValue" for="musicVolumeInput">100%</output>
+                </label>
+                <input
+                  id="musicVolumeInput"
+                  class="volume-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="100"
+                  aria-label="背景音乐音量"
+                />
+              </div>
+            </div>
           </div>
         </section>
       </header>
