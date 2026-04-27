@@ -22,6 +22,8 @@ const SOUND_VOLUMES: Record<SoundEvent, number> = {
   click: 0.42,
 };
 
+const MUSIC_BASE_VOLUME = 0.34;
+
 const SYNTH_PROFILES: Record<SoundEvent, { frequency: number; endFrequency: number; duration: number; volume: number }> = {
   pickup: { frequency: 880, endFrequency: 1320, duration: 0.12, volume: 0.06 },
   unlock: { frequency: 520, endFrequency: 1040, duration: 0.32, volume: 0.08 },
@@ -33,9 +35,32 @@ const SYNTH_PROFILES: Record<SoundEvent, { frequency: number; endFrequency: numb
 };
 
 const MUTED_STORAGE_KEY = "dungeon-courier-muted";
+const SFX_VOLUME_STORAGE_KEY = "dungeon-courier-sfx-volume";
+const MUSIC_VOLUME_STORAGE_KEY = "dungeon-courier-music-volume";
+
+export type AudioSettings = {
+  muted: boolean;
+  sfxVolume: number;
+  musicVolume: number;
+};
 
 function assetPath(path: string): string {
   return new URL(path, document.baseURI).href;
+}
+
+function clampVolume(volume: number): number {
+  if (!Number.isFinite(volume)) {
+    return 1;
+  }
+  return Math.max(0, Math.min(1, volume));
+}
+
+function storedVolume(key: string, fallback: number): number {
+  const raw = localStorage.getItem(key);
+  if (raw === null) {
+    return fallback;
+  }
+  return clampVolume(Number(raw));
 }
 
 export class AudioManager {
@@ -43,17 +68,22 @@ export class AudioManager {
   private readonly music: HTMLAudioElement;
   private audioContext: AudioContext | null = null;
   private muted: boolean;
+  private sfxVolume: number;
+  private musicVolume: number;
   private musicEnabled = false;
 
   constructor(private readonly paths = SOUND_PATHS) {
     this.muted = localStorage.getItem(MUTED_STORAGE_KEY) === "true";
+    this.sfxVolume = storedVolume(SFX_VOLUME_STORAGE_KEY, 1);
+    this.musicVolume = storedVolume(MUSIC_VOLUME_STORAGE_KEY, 1);
     for (const event of Object.keys(paths) as SoundEvent[]) {
       this.pools.set(
         event,
         Array.from({ length: 3 }, () => {
           const audio = new Audio(paths[event]);
           audio.preload = "auto";
-          audio.volume = SOUND_VOLUMES[event];
+          audio.volume = this.eventVolume(event);
+          audio.muted = this.muted;
           return audio;
         }),
       );
@@ -61,7 +91,7 @@ export class AudioManager {
     this.music = new Audio(MUSIC_PATH);
     this.music.loop = true;
     this.music.preload = "auto";
-    this.music.volume = 0.34;
+    this.music.volume = this.currentMusicVolume();
     this.music.muted = this.muted;
   }
 
@@ -75,7 +105,7 @@ export class AudioManager {
   }
 
   play(event: SoundEvent): void {
-    if (this.muted) {
+    if (this.muted || this.sfxVolume <= 0) {
       return;
     }
 
@@ -117,6 +147,26 @@ export class AudioManager {
     return this.muted;
   }
 
+  getSettings(): AudioSettings {
+    return {
+      muted: this.muted,
+      sfxVolume: this.sfxVolume,
+      musicVolume: this.musicVolume,
+    };
+  }
+
+  setSfxVolume(volume: number): void {
+    this.sfxVolume = clampVolume(volume);
+    localStorage.setItem(SFX_VOLUME_STORAGE_KEY, String(this.sfxVolume));
+    this.syncClipVolumes();
+  }
+
+  setMusicVolume(volume: number): void {
+    this.musicVolume = clampVolume(volume);
+    localStorage.setItem(MUSIC_VOLUME_STORAGE_KEY, String(this.musicVolume));
+    this.syncMusicVolume();
+  }
+
   enableMusic(): void {
     this.musicEnabled = true;
   }
@@ -153,6 +203,26 @@ export class AudioManager {
     this.music.currentTime = 0;
   }
 
+  private syncClipVolumes(): void {
+    for (const [event, pool] of this.pools) {
+      for (const clip of pool) {
+        clip.volume = this.eventVolume(event);
+      }
+    }
+  }
+
+  private syncMusicVolume(): void {
+    this.music.volume = this.currentMusicVolume();
+  }
+
+  private eventVolume(event: SoundEvent): number {
+    return SOUND_VOLUMES[event] * this.sfxVolume;
+  }
+
+  private currentMusicVolume(): number {
+    return MUSIC_BASE_VOLUME * this.musicVolume;
+  }
+
   private nextClip(event: SoundEvent): HTMLAudioElement | null {
     const pool = this.pools.get(event);
     if (!pool || pool.length === 0) {
@@ -175,7 +245,7 @@ export class AudioManager {
     oscillator.frequency.setValueAtTime(profile.frequency, now);
     oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, profile.endFrequency), now + profile.duration);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(profile.volume, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(profile.volume * this.sfxVolume, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + profile.duration);
     oscillator.connect(gain);
     gain.connect(context.destination);
