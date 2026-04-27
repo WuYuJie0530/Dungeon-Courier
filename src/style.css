@@ -577,6 +577,23 @@ input {
   font-weight: 700;
 }
 
+.sound-toggle {
+  min-height: 1.58rem;
+  margin-top: 0.3rem;
+  padding: 0.18rem 0.46rem;
+  border-color: rgba(17, 244, 238, 0.42);
+  color: #cffffc;
+  background: rgba(3, 15, 18, 0.78);
+  font-size: clamp(0.62rem, 0.68vw, 0.76rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sound-toggle[aria-pressed="true"] {
+  border-color: rgba(255, 215, 94, 0.48);
+  color: #ffe38a;
+}
+
 .pause-control {
   width: clamp(3rem, 4.1vw, 4rem);
   height: clamp(3rem, 4.1vw, 4rem);

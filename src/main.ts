@@ -1,3 +1,4 @@
+import { AudioManager } from "./audio";
 import { GameEngine } from "./game";
 import { Renderer } from "./render";
 import { installTestApi } from "./testApi";
@@ -12,10 +13,12 @@ import {
 import "./style.css";
 
 const engine = new GameEngine();
+const audio = new AudioManager();
 const appShell = requiredElement<HTMLDivElement>("app");
 const canvas = requiredElement<HTMLCanvasElement>("gameCanvas");
 const renderer = new Renderer(canvas);
 const pauseButton = requiredElement<HTMLButtonElement>("pauseButton");
+const soundButton = requiredElement<HTMLButtonElement>("soundButton");
 const overlayRestartButton = requiredElement<HTMLButtonElement>("overlayRestartButton");
 const overlayRetryButton = requiredElement<HTMLButtonElement>("overlayRetryButton");
 const resultLevelSelectButton = requiredElement<HTMLButtonElement>("resultLevelSelectButton");
@@ -51,12 +54,19 @@ const hud = {
 
 let deterministicTestMode = false;
 let levelSelectRenderKey = "";
+let lastAudioState: GameStateSnapshot | null = null;
 
 function renderNow(): void {
   const state = engine.getState();
+  playStateAudio(lastAudioState, state);
+  lastAudioState = state;
+  audio.updateMusic(state.status);
   renderer.render(engine.getMap(), state);
   updateHud(state);
 }
+
+audio.load();
+updateSoundButton();
 
 installTestApi(
   engine,
@@ -67,6 +77,8 @@ installTestApi(
 );
 
 overlayRestartButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
   const status = engine.getState().status;
   if (status === "won") {
     engine.nextLevel();
@@ -79,24 +91,34 @@ overlayRestartButton.addEventListener("click", () => {
 });
 
 overlayRetryButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
   engine.restartLevel();
   renderNow();
 });
 
 resultLevelSelectButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
   openLevelSelect();
 });
 
 campaignRestartButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
   engine.restartCampaign();
   renderNow();
 });
 
 levelSelectButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
   openLevelSelect();
 });
 
 levelSelectClose.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
   closeLevelSelect();
 });
 
@@ -107,11 +129,24 @@ levelSelectOverlay.addEventListener("click", (event) => {
 });
 
 pauseButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
   engine.togglePause();
   renderNow();
 });
 
+soundButton.addEventListener("click", () => {
+  audio.enableMusic();
+  const muted = audio.toggleMuted();
+  updateSoundButton();
+  if (!muted) {
+    audio.play("click");
+    audio.updateMusic(engine.getState().status);
+  }
+});
+
 window.addEventListener("keydown", (event) => {
+  audio.enableMusic();
   const direction = directionFromKey(event.key);
   if (direction) {
     event.preventDefault();
@@ -133,6 +168,7 @@ window.addEventListener("keydown", (event) => {
 
   if (event.key.toLowerCase() === "p") {
     engine.togglePause();
+    audio.play("click");
     renderNow();
     return;
   }
@@ -170,6 +206,38 @@ function loop(now: number): void {
 
 renderNow();
 requestAnimationFrame(loop);
+
+function playStateAudio(previous: GameStateSnapshot | null, current: GameStateSnapshot): void {
+  if (!previous) {
+    return;
+  }
+
+  if (current.collectedLetters > previous.collectedLetters) {
+    audio.play("pickup");
+  }
+  if (!previous.exit.open && current.exit.open) {
+    audio.play("unlock");
+  }
+  if (current.lives < previous.lives) {
+    audio.play("hit");
+  }
+  if (previous.dashCooldownFrames === 0 && current.dashCooldownFrames > 0) {
+    audio.play("dash");
+  }
+  if (previous.status !== current.status) {
+    if (previous.status === "playing" && (current.status === "won" || current.status === "completed")) {
+      audio.play("win");
+    } else if (previous.status === "playing" && current.status === "lost") {
+      audio.play("lose");
+    }
+  }
+}
+
+function updateSoundButton(): void {
+  const muted = audio.isMuted();
+  soundButton.textContent = muted ? "🔇 Muted" : "🔊 Sound";
+  soundButton.setAttribute("aria-pressed", String(muted));
+}
 
 function updateHud(state: GameStateSnapshot): void {
   const chasers = state.enemies.filter((enemy) => enemy.kind === "chaser").length;
@@ -246,6 +314,8 @@ function renderLevelSelect(state: GameStateSnapshot): void {
 
       if (unlocked) {
         button.addEventListener("click", () => {
+          audio.enableMusic();
+          audio.play("click");
           engine.selectLevel(level);
           closeLevelSelect();
           renderNow();
