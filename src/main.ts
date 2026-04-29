@@ -1,5 +1,6 @@
 import { AudioManager } from "./audio";
 import { GameEngine } from "./game";
+import { gradeFromState, loadProgress, saveProgress, updateProgressWithResult, type ProgressData } from "./progress";
 import { Renderer } from "./render";
 import { installTestApi } from "./testApi";
 import {
@@ -13,6 +14,8 @@ import {
 import "./style.css";
 
 const engine = new GameEngine();
+let progressData: ProgressData = loadProgress();
+engine.setUnlockedLevel(progressData.unlockedLevel);
 const audio = new AudioManager();
 const appShell = requiredElement<HTMLDivElement>("app");
 const startOverlay = requiredElement<HTMLDivElement>("startOverlay");
@@ -31,6 +34,9 @@ const sfxVolumeInput = requiredElement<HTMLInputElement>("sfxVolumeInput");
 const sfxVolumeValue = requiredElement<HTMLOutputElement>("sfxVolumeValue");
 const musicVolumeInput = requiredElement<HTMLInputElement>("musicVolumeInput");
 const musicVolumeValue = requiredElement<HTMLOutputElement>("musicVolumeValue");
+const touchControls = requiredElement<HTMLElement>("touchControls");
+const touchDashButton = requiredElement<HTMLButtonElement>("touchDashButton");
+const touchPauseButton = requiredElement<HTMLButtonElement>("touchPauseButton");
 const overlayRestartButton = requiredElement<HTMLButtonElement>("overlayRestartButton");
 const overlayRetryButton = requiredElement<HTMLButtonElement>("overlayRetryButton");
 const resultLevelSelectButton = requiredElement<HTMLButtonElement>("resultLevelSelectButton");
@@ -68,9 +74,11 @@ let deterministicTestMode = false;
 let gameStarted = false;
 let levelSelectRenderKey = "";
 let lastAudioState: GameStateSnapshot | null = null;
+const touchHoldTimers = new Map<Direction, number>();
 
 function renderNow(): void {
   const state = engine.getState();
+  persistProgressResult(lastAudioState, state);
   if (gameStarted) {
     playStateAudio(lastAudioState, state);
   }
@@ -213,6 +221,23 @@ musicVolumeInput.addEventListener("input", () => {
   audio.updateMusic(engine.getState().status);
 });
 
+for (const button of touchControls.querySelectorAll<HTMLButtonElement>("[data-touch-direction]")) {
+  const direction = directionFromKey(button.dataset.touchDirection ?? "");
+  if (direction) {
+    bindHoldButton(button, direction);
+  }
+}
+
+touchDashButton.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  dashByTouch();
+});
+
+touchPauseButton.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  pauseByTouch();
+});
+
 window.addEventListener("keydown", (event) => {
   unlockMusic();
   if (!gameStarted) {
@@ -313,6 +338,57 @@ function playStateAudio(previous: GameStateSnapshot | null, current: GameStateSn
   }
 }
 
+function bindHoldButton(button: HTMLButtonElement, direction: Direction): void {
+  const stop = () => stopTouchHold(direction);
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    button.setPointerCapture?.(event.pointerId);
+    moveByTouch(direction);
+    stopTouchHold(direction);
+    touchHoldTimers.set(direction, window.setInterval(() => moveByTouch(direction), 150));
+  });
+  button.addEventListener("pointerup", stop);
+  button.addEventListener("pointercancel", stop);
+  button.addEventListener("pointerleave", stop);
+  button.addEventListener("lostpointercapture", stop);
+}
+
+function moveByTouch(direction: Direction): void {
+  unlockMusic();
+  if (!gameStarted) {
+    return;
+  }
+  engine.movePlayer(direction);
+  renderNow();
+}
+
+function dashByTouch(): void {
+  unlockMusic();
+  if (!gameStarted) {
+    return;
+  }
+  engine.dash(engine.getState().player.lastDirection);
+  renderNow();
+}
+
+function pauseByTouch(): void {
+  unlockMusic();
+  if (!gameStarted) {
+    return;
+  }
+  engine.togglePause();
+  audio.play("click");
+  renderNow();
+}
+
+function stopTouchHold(direction: Direction): void {
+  const timer = touchHoldTimers.get(direction);
+  if (timer !== undefined) {
+    window.clearInterval(timer);
+    touchHoldTimers.delete(direction);
+  }
+}
+
 function updateSoundButton(): void {
   const muted = audio.isMuted();
   soundButton.textContent = muted ? "🔇 Muted" : "🔊 Sound";
@@ -400,17 +476,20 @@ function closeLevelSelect(): void {
 }
 
 function renderLevelSelect(state: GameStateSnapshot): void {
-  const renderKey = `${state.level}:${state.unlockedLevel}:${state.maxLevel}`;
+  const savedRecords = progressData.records;
+  const recordCount = Object.keys(savedRecords).length;
+  const renderKey = `${state.level}:${state.unlockedLevel}:${state.maxLevel}:${progressData.unlockedLevel}:${JSON.stringify(savedRecords)}`;
   if (renderKey === levelSelectRenderKey && levelSelectGrid.children.length > 0) {
     return;
   }
   levelSelectRenderKey = renderKey;
-  levelSelectSummary.textContent = `已解锁 ${state.unlockedLevel} / ${state.maxLevel}`;
+  levelSelectSummary.textContent = `已解锁 ${state.unlockedLevel} / ${state.maxLevel} · 最佳记录 ${recordCount} / ${state.maxLevel}`;
   levelSelectGrid.replaceChildren(
     ...Array.from({ length: state.maxLevel }, (_, index) => {
       const level = index + 1;
       const unlocked = level <= state.unlockedLevel;
       const current = level === state.level;
+      const record = savedRecords[level];
       const button = document.createElement("button");
       button.type = "button";
       button.className = "level-choice";
@@ -421,7 +500,7 @@ function renderLevelSelect(state: GameStateSnapshot): void {
       const title = document.createElement("span");
       title.textContent = `第 ${level} 关`;
       const detail = document.createElement("small");
-      detail.textContent = current ? "当前关卡" : unlocked ? "已解锁" : "未解锁";
+      detail.textContent = record ? `最佳 ${record.grade} · ${formatClock(record.timeRemaining)}` : current ? "当前关卡" : unlocked ? "已解锁" : "未解锁";
       button.replaceChildren(title, detail);
 
       if (unlocked) {
@@ -445,15 +524,17 @@ function updateResultOverlay(state: GameStateSnapshot): void {
   const wonLevel = state.status === "won";
   const completedCampaign = state.status === "completed";
   const failedLevel = state.status === "lost";
-  const grade = completedCampaign ? "S+" : state.lives >= 3 && state.timeRemaining >= 45 ? "S" : state.lives >= 2 ? "A" : "B";
+  const nextLevel = Math.min(state.level + 1, MAX_LEVEL);
+  const grade = gradeFromState(state);
 
+  resultOverlay.classList.toggle("level-complete", wonLevel);
   resultOverlay.classList.toggle("campaign-complete", completedCampaign);
   resultOverlay.classList.toggle("level-failed", failedLevel);
   resultTitle.textContent = completedCampaign ? "任务完成" : wonLevel ? "关卡完成" : "任务失败";
   resultSubtitle.textContent = completedCampaign
     ? "信件已全部送达，成功脱出！"
     : wonLevel
-      ? `第 ${state.level} 关完成，下一关难度将提升。`
+      ? `第 ${state.level} 关完成，第 ${nextLevel} 关已解锁。`
       : "行动失败，潜入暴露，目标未达成。";
   resultLevel.textContent = `${Math.min(state.level, MAX_LEVEL)} / ${MAX_LEVEL}`;
   resultTime.textContent = formatClock(state.timeRemaining);
@@ -466,10 +547,20 @@ function updateResultOverlay(state: GameStateSnapshot): void {
       ? "路线清晰，继续保持。"
       : "别急，失败乃潜行之常态。复盘路线，再次尝试突破。";
   overlayRetryButton.textContent = failedLevel ? "再次挑战" : "重玩本关";
-  overlayRestartButton.textContent = completedCampaign ? "重新挑战五关" : wonLevel ? "进入下一关" : "重新开始本关";
-  resultLevelSelectButton.hidden = !failedLevel;
+  overlayRestartButton.textContent = completedCampaign ? "重新挑战五关" : wonLevel ? `进入第 ${nextLevel} 关` : "重新开始本关";
+  resultLevelSelectButton.hidden = completedCampaign;
   overlayRestartButton.hidden = failedLevel;
-  campaignRestartButton.hidden = failedLevel;
+  campaignRestartButton.hidden = true;
+}
+
+function persistProgressResult(previous: GameStateSnapshot | null, current: GameStateSnapshot): void {
+  if (!previous || previous.status !== "playing" || (current.status !== "won" && current.status !== "completed")) {
+    return;
+  }
+  progressData = updateProgressWithResult(progressData, current);
+  saveProgress(progressData);
+  engine.setUnlockedLevel(progressData.unlockedLevel);
+  levelSelectRenderKey = "";
 }
 
 function objectiveText(state: GameStateSnapshot): string {
@@ -568,15 +659,19 @@ function statusLabel(status: GameStateSnapshot["status"]): string {
 
 function directionFromKey(key: string): Direction | null {
   switch (key.toLowerCase()) {
+    case "up":
     case "w":
     case "arrowup":
       return "up";
+    case "down":
     case "s":
     case "arrowdown":
       return "down";
+    case "left":
     case "a":
     case "arrowleft":
       return "left";
+    case "right":
     case "d":
     case "arrowright":
       return "right";

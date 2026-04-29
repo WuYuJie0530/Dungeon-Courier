@@ -74,6 +74,9 @@ test("scripted browser route collects all letters and wins", async ({ page }) =>
 test("winning a level unlocks the next level flow", async ({ page }) => {
   const wonState = await runScriptedWin(page, "browser-level-flow");
   expect(wonState.status).toBe("won");
+  await expect(page.locator("#resultSubtitle")).toContainText(`第 ${wonState.level + 1} 关已解锁`);
+  await expect(page.locator("#overlayRestartButton")).toContainText(`进入第 ${wonState.level + 1} 关`);
+  await expect(page.locator("#campaignRestartButton")).toBeHidden();
   await page.click("#overlayRestartButton");
   const nextState = await page.evaluate(() => window.__GAME_TEST_API__.getState());
   expect(nextState.status).toBe("playing");
@@ -92,8 +95,22 @@ test("level progress selector only enables unlocked levels", async ({ page }) =>
   const wonState = await runScriptedWin(page, "browser-level-select");
   expect(wonState.unlockedLevel).toBe(2);
 
+  await expect(page.locator("#resultLevelSelectButton")).toContainText("关卡进度");
+  await page.click("#resultLevelSelectButton");
+  await expect(page.locator("#levelSelectOverlay")).toBeVisible();
+  await expect(page.locator("#levelSelectSummary")).toContainText("最佳记录 1 / 5");
+  await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("最佳");
+  await page.click("#levelSelectClose");
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
+  await page.addScriptTag({ content: browserHelperScript });
+  await page.click("#startGameButton");
+
   await page.click("#levelSelectButton");
   await expect(page.locator("#levelSelectSummary")).toContainText("2 / 5");
+  await expect(page.locator("#levelSelectSummary")).toContainText("最佳记录 1 / 5");
+  await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("最佳");
   await expect(page.locator('.level-choice[data-level="2"]')).toBeEnabled();
   await expect(page.locator('.level-choice[data-level="3"]')).toBeDisabled();
   await page.click('.level-choice[data-level="2"]');
@@ -127,9 +144,12 @@ test("final fifth level shows campaign celebration instead of another level", as
   expect(result.completed.status).toBe("completed");
   expect(result.completed.campaignCompleted).toBe(true);
   expect(result.afterNext.level).toBe(result.completed.maxLevel);
+  const progress = await page.evaluate(() => JSON.parse(localStorage.getItem("dungeon-courier-progress") ?? "{}"));
+  expect(progress.records["5"].grade).toBe("S+");
   await expect(page.locator("#resultTitle")).toContainText("任务完成");
   await expect(page.locator("#overlayRestartButton")).toContainText("重新挑战五关");
-  await page.click("#campaignRestartButton");
+  await expect(page.locator("#campaignRestartButton")).toBeHidden();
+  await page.click("#overlayRestartButton");
   const state = await page.evaluate(() => window.__GAME_TEST_API__.getState());
   expect(state.level).toBe(1);
   expect(state.status).toBe("playing");
@@ -288,6 +308,61 @@ test("mobile canvas viewport remains playable", async ({ page }) => {
 
   expect(result.floor).toBe(true);
   expect(result.canvasWidth).toBeLessThanOrEqual(result.viewportWidth);
+});
+
+test("mobile touch controls move, dash, and pause the game", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("#touchControls")).toBeVisible();
+
+  const direction = await page.evaluate(() => {
+    const api = window.__GAME_TEST_API__;
+    const helpers = window.__TEST_HELPERS__;
+    api.restart("browser-touch-controls");
+    return helpers.firstOpenDirection(api.getMap(), api.getState().player);
+  });
+  const beforeMove = await page.evaluate(() => window.__GAME_TEST_API__.getState().player);
+  await page.locator(`[data-touch-direction="${direction}"]`).click();
+  const afterMove = await page.evaluate(() => window.__GAME_TEST_API__.getState().player);
+  expect(afterMove).not.toEqual(beforeMove);
+
+  await page.locator("#touchDashButton").click();
+  const afterDash = await page.evaluate(() => window.__GAME_TEST_API__.getState());
+  expect(afterDash.dashCooldownFrames).toBeGreaterThan(0);
+
+  await page.locator("#touchPauseButton").click();
+  await expect.poll(() => page.evaluate(() => window.__GAME_TEST_API__.getState().status)).toBe("paused");
+  await page.locator("#touchPauseButton").click();
+  await expect.poll(() => page.evaluate(() => window.__GAME_TEST_API__.getState().status)).toBe("playing");
+});
+
+test("mobile touch hold repeats movement and start overlay blocks touch input", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const direction = await page.evaluate(() => {
+    const api = window.__GAME_TEST_API__;
+    const helpers = window.__TEST_HELPERS__;
+    api.restart("browser-touch-hold");
+    return helpers.firstOpenDirection(api.getMap(), api.getState().player);
+  });
+  const beforeHold = await page.evaluate(() => window.__GAME_TEST_API__.getState().player);
+  const button = page.locator(`[data-touch-direction="${direction}"]`);
+  await button.dispatchEvent("pointerdown", { pointerId: 1, pointerType: "touch", bubbles: true });
+  await page.waitForTimeout(360);
+  await button.dispatchEvent("pointerup", { pointerId: 1, pointerType: "touch", bubbles: true });
+  const afterHold = await page.evaluate(() => window.__GAME_TEST_API__.getState().player);
+  expect(Math.abs(afterHold.x - beforeHold.x) + Math.abs(afterHold.y - beforeHold.y)).toBeGreaterThanOrEqual(1);
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
+  await page.addScriptTag({ content: browserHelperScript });
+  const beforeStart = await page.evaluate(() => window.__GAME_TEST_API__.getState().player);
+  await page.locator('[data-touch-direction="right"]').dispatchEvent("pointerdown", { pointerId: 2, pointerType: "touch", bubbles: true });
+  const afterStartTouch = await page.evaluate(() => window.__GAME_TEST_API__.getState().player);
+  expect(afterStartTouch).toEqual(beforeStart);
+});
+
+test("desktop hides mobile touch controls", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.locator("#touchControls")).toBeHidden();
 });
 
 async function runScriptedWin(page: Page, seed: string): Promise<GameStateSnapshot> {

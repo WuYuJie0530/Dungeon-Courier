@@ -113,6 +113,7 @@ export interface GameStateSnapshot extends EntitySnapshot {
 export interface GameTestApi {
   getState(): GameStateSnapshot;
   setSeed(seed: string): void;
+  setUnlockedLevel(level: number): GameStateSnapshot;
   restart(seed?: string): GameStateSnapshot;
   step(frames: number): GameStateSnapshot;
   movePlayer(direction: Direction): GameStateSnapshot;

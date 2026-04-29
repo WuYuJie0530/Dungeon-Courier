@@ -283,4 +283,20 @@ describe("Dungeon Courier engine", () => {
     const stillLocked = engine.selectLevel(4);
     expect(stillLocked.level).toBe(2);
   });
+
+  it("accepts saved unlocked progress without lowering it on campaign restart", () => {
+    const engine = new GameEngine();
+    engine.setUnlockedLevel(3);
+
+    const selected = engine.selectLevel(3);
+    expect(selected.level).toBe(3);
+    expect(selected.unlockedLevel).toBe(3);
+
+    const locked = engine.selectLevel(4);
+    expect(locked.level).toBe(3);
+
+    const restarted = engine.restartCampaign();
+    expect(restarted.level).toBe(1);
+    expect(restarted.unlockedLevel).toBe(3);
+  });
 });

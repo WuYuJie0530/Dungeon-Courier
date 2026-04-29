@@ -17,6 +17,7 @@ export function installTestApi(engine: GameEngine, enterTestMode: () => void, af
       engine.setSeed(String(seed));
       afterMutation();
     },
+    setUnlockedLevel: (level: number) => withState(() => engine.setUnlockedLevel(level)),
     restart: (seed?: string) => withState(() => engine.restart(seed)),
     step: (frames: number) => withState(() => engine.step(frames)),
     movePlayer: (direction) =>

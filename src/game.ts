@@ -67,6 +67,12 @@ export class GameEngine {
     this.nextSeed = String(seed);
   }
 
+  setUnlockedLevel(level: number): GameStateSnapshot {
+    const targetLevel = Math.max(1, Math.min(MAX_LEVEL, Math.floor(level)));
+    this.unlockedLevel = Math.max(this.unlockedLevel, targetLevel);
+    return this.getState();
+  }
+
   restart(seed = this.nextSeed): GameStateSnapshot {
     this.seed = String(seed);
     this.nextSeed = this.seed;
