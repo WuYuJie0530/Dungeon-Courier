@@ -24,8 +24,11 @@ export class Renderer {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawMap(map);
     this.drawDecorations(map);
+    this.drawSpikeTraps(state);
+    this.drawPortals(state);
     this.drawExit(state);
     this.drawCharms(state);
+    this.drawHourglasses(state);
     this.drawLetters(state);
     this.drawEnemyVision(state.enemies);
     this.drawEnemies(state.enemies);
@@ -43,10 +46,11 @@ export class Renderer {
   }
 
   private drawMap(map: MapData): void {
+    const palette = themePalette(map.theme);
     const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    gradient.addColorStop(0, "#061016");
+    gradient.addColorStop(0, palette.backgroundTop);
     gradient.addColorStop(0.6, "#02080b");
-    gradient.addColorStop(1, "#010304");
+    gradient.addColorStop(1, palette.backgroundBottom);
     this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -88,8 +92,9 @@ export class Renderer {
     const px = x * TILE_SIZE;
     const py = y * TILE_SIZE;
     const hash = hashCell(map.seed, x, y);
-    const shade = 28 + (hash % 13);
-    this.ctx.fillStyle = `rgb(${shade}, ${shade + 5}, ${shade + 7})`;
+    const palette = themePalette(map.theme);
+    const shade = palette.floorBase + (hash % 13);
+    this.ctx.fillStyle = `rgb(${shade}, ${shade + palette.floorGreenBoost}, ${shade + palette.floorBlueBoost})`;
     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
     this.ctx.strokeStyle = "rgba(139, 163, 165, 0.26)";
     this.ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
@@ -122,8 +127,9 @@ export class Renderer {
     }
 
     const hash = hashCell(map.seed, x, y);
-    const shade = 58 + (hash % 24);
-    this.ctx.fillStyle = `rgb(${shade}, ${shade + 1}, ${shade})`;
+    const palette = themePalette(map.theme);
+    const shade = palette.wallBase + (hash % 24);
+    this.ctx.fillStyle = `rgb(${shade}, ${shade + palette.wallGreenBoost}, ${shade + palette.wallBlueBoost})`;
     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
     this.ctx.fillStyle = `rgba(210, 235, 235, ${0.1 + (hash % 5) / 50})`;
     this.ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, 5);
@@ -339,24 +345,98 @@ export class Renderer {
     }
   }
 
+  private drawHourglasses(state: GameStateSnapshot): void {
+    for (const hourglass of state.hourglasses) {
+      if (hourglass.collected) {
+        continue;
+      }
+      const cx = hourglass.x * TILE_SIZE + TILE_SIZE / 2;
+      const cy = hourglass.y * TILE_SIZE + TILE_SIZE / 2;
+      const glow = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, 32);
+      glow.addColorStop(0, "rgba(119, 232, 255, 0.62)");
+      glow.addColorStop(1, "rgba(119, 232, 255, 0)");
+      this.ctx.fillStyle = glow;
+      this.ctx.fillRect(cx - 36, cy - 36, 72, 72);
+      this.ctx.strokeStyle = "#7be8ff";
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 8, cy - 10);
+      this.ctx.lineTo(cx + 8, cy - 10);
+      this.ctx.lineTo(cx + 2, cy);
+      this.ctx.lineTo(cx + 8, cy + 10);
+      this.ctx.lineTo(cx - 8, cy + 10);
+      this.ctx.lineTo(cx - 2, cy);
+      this.ctx.closePath();
+      this.ctx.stroke();
+      this.ctx.fillStyle = "#ffe178";
+      this.ctx.fillRect(cx - 4, cy - 7, 8, 3);
+      this.ctx.fillRect(cx - 4, cy + 4, 8, 3);
+      this.ctx.lineWidth = 1;
+    }
+  }
+
+  private drawSpikeTraps(state: GameStateSnapshot): void {
+    for (const spike of state.spikeTraps) {
+      const px = spike.x * TILE_SIZE;
+      const py = spike.y * TILE_SIZE;
+      this.ctx.fillStyle = spike.active ? "rgba(255, 83, 70, 0.28)" : "rgba(96, 110, 116, 0.2)";
+      this.ctx.fillRect(px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6);
+      this.ctx.fillStyle = spike.active ? "#ff5b4e" : "#65747a";
+      for (let i = 0; i < 3; i += 1) {
+        const x = px + 6 + i * 6;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, py + 17);
+        this.ctx.lineTo(x + 3, py + 7);
+        this.ctx.lineTo(x + 6, py + 17);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+    }
+  }
+
+  private drawPortals(state: GameStateSnapshot): void {
+    for (const portal of state.portals) {
+      const cx = portal.x * TILE_SIZE + TILE_SIZE / 2;
+      const cy = portal.y * TILE_SIZE + TILE_SIZE / 2;
+      const pulse = 0.5 + 0.5 * Math.sin(state.frame / 14);
+      this.ctx.strokeStyle = `rgba(172, 114, 255, ${0.55 + pulse * 0.32})`;
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy, 9 + pulse * 2, 12, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.fillStyle = "rgba(95, 50, 166, 0.32)";
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy, 6, 9, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.lineWidth = 1;
+    }
+  }
+
   private drawEnemyVision(enemies: Enemy[]): void {
     for (const enemy of enemies) {
-      if (enemy.kind !== "chaser") {
+      if (enemy.kind !== "chaser" && enemy.kind !== "sentinel") {
         continue;
       }
       const center = tileCenter(enemy);
       this.ctx.save();
       this.ctx.translate(center.x, center.y);
       this.ctx.rotate(directionAngle(enemy.direction));
-      this.ctx.fillStyle = "rgba(221, 55, 42, 0.18)";
-      this.ctx.strokeStyle = "rgba(221, 55, 42, 0.38)";
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, 0);
-      this.ctx.lineTo(72, -38);
-      this.ctx.lineTo(72, 38);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
+      if (enemy.kind === "sentinel") {
+        this.ctx.fillStyle = "rgba(255, 215, 94, 0.16)";
+        this.ctx.strokeStyle = "rgba(255, 215, 94, 0.44)";
+        this.ctx.fillRect(0, -8, enemy.alertRange * TILE_SIZE, 16);
+        this.ctx.strokeRect(0, -8, enemy.alertRange * TILE_SIZE, 16);
+      } else {
+        this.ctx.fillStyle = "rgba(221, 55, 42, 0.18)";
+        this.ctx.strokeStyle = "rgba(221, 55, 42, 0.38)";
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, 0);
+        this.ctx.lineTo(72, -38);
+        this.ctx.lineTo(72, 38);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+      }
       this.ctx.restore();
     }
   }
@@ -368,8 +448,10 @@ export class Renderer {
       this.ctx.translate(center.x, center.y);
       if (enemy.kind === "chaser") {
         this.drawChaser();
-      } else {
+      } else if (enemy.kind === "patroller") {
         this.drawPatroller(enemy.direction);
+      } else {
+        this.drawSentinel(enemy.direction);
       }
       this.ctx.restore();
     }
@@ -414,6 +496,25 @@ export class Renderer {
     this.ctx.moveTo(5, 4);
     this.ctx.lineTo(13, 12);
     this.ctx.stroke();
+    this.ctx.lineWidth = 1;
+  }
+
+  private drawSentinel(direction: Direction): void {
+    this.ctx.rotate(directionAngle(direction));
+    this.ctx.fillStyle = "#33240b";
+    this.ctx.strokeStyle = "#ffd75e";
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(12, 0);
+    this.ctx.lineTo(-8, -9);
+    this.ctx.lineTo(-8, 9);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.stroke();
+    this.ctx.fillStyle = "#fff0a3";
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    this.ctx.fill();
     this.ctx.lineWidth = 1;
   }
 
@@ -527,4 +628,64 @@ function hashCell(seed: string, x: number, y: number): number {
     hash = Math.imul(hash, 16777619);
   }
   return hash >>> 0;
+}
+
+function themePalette(theme: MapData["theme"]) {
+  switch (theme) {
+    case "archive":
+      return {
+        backgroundTop: "#10100b",
+        backgroundBottom: "#050403",
+        floorBase: 34,
+        floorGreenBoost: 8,
+        floorBlueBoost: 2,
+        wallBase: 66,
+        wallGreenBoost: 8,
+        wallBlueBoost: 2,
+      };
+    case "canal":
+      return {
+        backgroundTop: "#06151a",
+        backgroundBottom: "#010506",
+        floorBase: 24,
+        floorGreenBoost: 12,
+        floorBlueBoost: 17,
+        wallBase: 52,
+        wallGreenBoost: 9,
+        wallBlueBoost: 13,
+      };
+    case "watchtower":
+      return {
+        backgroundTop: "#100c13",
+        backgroundBottom: "#050307",
+        floorBase: 30,
+        floorGreenBoost: 5,
+        floorBlueBoost: 9,
+        wallBase: 62,
+        wallGreenBoost: 2,
+        wallBlueBoost: 8,
+      };
+    case "core":
+      return {
+        backgroundTop: "#110d18",
+        backgroundBottom: "#03020a",
+        floorBase: 31,
+        floorGreenBoost: 4,
+        floorBlueBoost: 14,
+        wallBase: 58,
+        wallGreenBoost: 0,
+        wallBlueBoost: 18,
+      };
+    default:
+      return {
+        backgroundTop: "#061016",
+        backgroundBottom: "#010304",
+        floorBase: 28,
+        floorGreenBoost: 5,
+        floorBlueBoost: 7,
+        wallBase: 58,
+        wallGreenBoost: 1,
+        wallBlueBoost: 0,
+      };
+  }
 }

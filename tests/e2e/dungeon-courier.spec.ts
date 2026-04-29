@@ -39,6 +39,16 @@ test("browser API exposes deterministic seed control", async ({ page }) => {
   expect(result.second.collectedLetters).toBe(0);
 });
 
+test("start page shows a fresh campaign state before play begins", async ({ page }) => {
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
+  await page.addScriptTag({ content: browserHelperScript });
+
+  await expect(page.locator("#startOverlay")).toBeVisible();
+  await expect(page.locator("#startGameButton")).toContainText("开始游戏");
+  await expect(page.locator("#startProgressText")).toContainText("从第 1 关开始派送");
+});
+
 test("player collision stays stable through API movement and dash", async ({ page }) => {
   const result = await page.evaluate(() => {
     const api = window.__GAME_TEST_API__;
@@ -89,7 +99,10 @@ test("level progress selector only enables unlocked levels", async ({ page }) =>
   await page.click("#levelSelectButton");
   await expect(page.locator("#levelSelectOverlay")).toBeVisible();
   await expect(page.locator('.level-choice[data-level="1"]')).toBeEnabled();
+  await expect(page.locator('.level-choice[data-level="1"]')).toContainText("推荐继续");
+  await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("待挑战");
   await expect(page.locator('.level-choice[data-level="2"]')).toBeDisabled();
+  await expect(page.locator('.level-choice[data-level="2"] small')).toContainText("未解锁");
   await page.click("#levelSelectClose");
 
   const wonState = await runScriptedWin(page, "browser-level-select");
@@ -100,24 +113,70 @@ test("level progress selector only enables unlocked levels", async ({ page }) =>
   await expect(page.locator("#levelSelectOverlay")).toBeVisible();
   await expect(page.locator("#levelSelectSummary")).toContainText("最佳记录 1 / 5");
   await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("最佳");
+  await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("用时");
+  await expect(page.locator('.level-choice[data-level="2"]')).toContainText("推荐继续");
+  await expect(page.locator('.level-choice[data-level="2"] small')).toContainText("待挑战");
   await page.click("#levelSelectClose");
 
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
   await page.addScriptTag({ content: browserHelperScript });
+  await expect(page.locator("#startGameButton")).toContainText("继续游戏");
+  await expect(page.locator("#startProgressText")).toContainText("继续第 2 关");
   await page.click("#startGameButton");
+  await expect.poll(() => page.evaluate(() => window.__GAME_TEST_API__.getState().level)).toBe(2);
 
   await page.click("#levelSelectButton");
   await expect(page.locator("#levelSelectSummary")).toContainText("2 / 5");
   await expect(page.locator("#levelSelectSummary")).toContainText("最佳记录 1 / 5");
   await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("最佳");
+  await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("用时");
   await expect(page.locator('.level-choice[data-level="2"]')).toBeEnabled();
+  await expect(page.locator('.level-choice[data-level="2"]')).toContainText("推荐继续");
+  await expect(page.locator('.level-choice[data-level="2"] small')).toContainText("待挑战");
   await expect(page.locator('.level-choice[data-level="3"]')).toBeDisabled();
+  await expect(page.locator('.level-choice[data-level="3"] small')).toContainText("未解锁");
   await page.click('.level-choice[data-level="2"]');
 
   const selectedState = await page.evaluate(() => window.__GAME_TEST_API__.getState());
   expect(selectedState.level).toBe(2);
   expect(selectedState.status).toBe("playing");
+
+  await page.click("#levelSelectButton");
+  await page.click('.level-choice[data-level="1"]');
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
+  await page.addScriptTag({ content: browserHelperScript });
+  await page.click("#startGameButton");
+  await expect.poll(() => page.evaluate(() => window.__GAME_TEST_API__.getState().level)).toBe(1);
+
+  await page.click("#levelSelectButton");
+  await page.click("#resetProgressButton");
+  await expect(page.locator("#resetProgressOverlay")).toBeVisible();
+  await expect(page.locator("#resetProgressOverlay")).toContainText("将清空已解锁关卡和所有最佳记录");
+  await page.click("#cancelResetProgressButton");
+  await expect(page.locator("#resetProgressOverlay")).toBeHidden();
+  await expect(page.locator('.level-choice[data-level="2"]')).toBeEnabled();
+
+  await page.click("#resetProgressButton");
+  await page.click("#confirmResetProgressButton");
+  await expect(page.locator("#resetProgressOverlay")).toBeHidden();
+  await expect(page.locator("#levelSelectSummary")).toContainText("已解锁 1 / 5");
+  await expect(page.locator("#levelSelectSummary")).toContainText("最佳记录 0 / 5");
+  await expect(page.locator('.level-choice[data-level="1"]')).toContainText("推荐继续");
+  await expect(page.locator('.level-choice[data-level="1"] small')).toContainText("待挑战");
+  await expect(page.locator('.level-choice[data-level="2"]')).toBeDisabled();
+
+  const resetProgress = await page.evaluate(() => JSON.parse(localStorage.getItem("dungeon-courier-progress") ?? "{}"));
+  expect(resetProgress).toEqual({ unlockedLevel: 1, lastPlayedLevel: 1, records: {} });
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
+  await page.addScriptTag({ content: browserHelperScript });
+  await expect(page.locator("#startGameButton")).toContainText("开始游戏");
+  await expect(page.locator("#startProgressText")).toContainText("从第 1 关开始派送");
+  await page.click("#startGameButton");
+  await expect.poll(() => page.evaluate(() => window.__GAME_TEST_API__.getState().level)).toBe(1);
 });
 
 test("final fifth level shows campaign celebration instead of another level", async ({ page }) => {
@@ -146,9 +205,16 @@ test("final fifth level shows campaign celebration instead of another level", as
   expect(result.afterNext.level).toBe(result.completed.maxLevel);
   const progress = await page.evaluate(() => JSON.parse(localStorage.getItem("dungeon-courier-progress") ?? "{}"));
   expect(progress.records["5"].grade).toBe("S+");
+  expect(progress.lastPlayedLevel).toBe(5);
   await expect(page.locator("#resultTitle")).toContainText("任务完成");
   await expect(page.locator("#overlayRestartButton")).toContainText("重新挑战五关");
   await expect(page.locator("#campaignRestartButton")).toBeHidden();
+  await page.click("#levelSelectButton");
+  await expect(page.locator("#levelSelectOverlay")).toBeVisible();
+  await expect(page.locator('.level-choice[data-level="5"]')).toContainText("推荐继续");
+  await expect(page.locator('.level-choice[data-level="5"] small')).toContainText("最佳 S+");
+  await expect(page.locator('.level-choice[data-level="5"] small')).toContainText("用时");
+  await page.click("#levelSelectClose");
   await page.click("#overlayRestartButton");
   const state = await page.evaluate(() => window.__GAME_TEST_API__.getState());
   expect(state.level).toBe(1);
@@ -333,6 +399,34 @@ test("mobile touch controls move, dash, and pause the game", async ({ page }) =>
   await expect.poll(() => page.evaluate(() => window.__GAME_TEST_API__.getState().status)).toBe("paused");
   await page.locator("#touchPauseButton").click();
   await expect.poll(() => page.evaluate(() => window.__GAME_TEST_API__.getState().status)).toBe("playing");
+});
+
+test("control instructions switch from keyboard to touch on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.locator(".controls-panel .keyboard-control-row").first()).toBeVisible();
+  await expect(page.locator(".controls-panel .touch-control-row").first()).toBeHidden();
+  await expect(page.locator(".controls-panel")).toContainText("W A S D");
+  await expect(page.locator(".controls-panel")).toContainText("Shift");
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__GAME_TEST_API__));
+  await page.addScriptTag({ content: browserHelperScript });
+  await page.click("#startHelpButton");
+  await expect(page.locator("#startHelpPanel .keyboard-control-row").first()).toBeVisible();
+  await expect(page.locator("#startHelpPanel .touch-control-row").first()).toBeHidden();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("#startHelpPanel .keyboard-control-row").first()).toBeHidden();
+  await expect(page.locator("#startHelpPanel .touch-control-row").first()).toBeVisible();
+  await expect(page.locator("#startHelpPanel")).toContainText("方向键");
+  await expect(page.locator("#startHelpPanel")).toContainText("按当前朝向冲刺");
+  await expect(page.locator("#startHelpPanel")).toContainText("暂停 / 继续");
+
+  await page.click("#startGameButton");
+  await expect(page.locator(".controls-panel .keyboard-control-row").first()).toBeHidden();
+  await expect(page.locator(".controls-panel .touch-control-row").first()).toBeVisible();
+  await expect(page.locator(".controls-panel")).toContainText("方向键");
+  await expect(page.locator(".controls-panel")).toContainText("按当前朝向冲刺");
 });
 
 test("mobile touch hold repeats movement and start overlay blocks touch input", async ({ page }) => {

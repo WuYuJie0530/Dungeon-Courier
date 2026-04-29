@@ -11,7 +11,8 @@ export const MAX_LEVEL = 5;
 
 export type Direction = "up" | "down" | "left" | "right";
 export type GameStatus = "playing" | "paused" | "won" | "lost" | "completed";
-export type EnemyKind = "chaser" | "patroller";
+export type EnemyKind = "chaser" | "patroller" | "sentinel";
+export type MapTheme = "tutorial" | "classic" | "archive" | "canal" | "watchtower" | "core";
 export type Tile = 0 | 1;
 
 export interface GridPoint {
@@ -34,8 +35,20 @@ export interface EnemySpawn extends GridPoint {
   direction: Direction;
 }
 
+export interface SpikeTrapSpawn extends GridPoint {
+  id: string;
+  phaseOffsetFrames: number;
+}
+
+export interface PortalPairSpawn {
+  id: string;
+  a: GridPoint;
+  b: GridPoint;
+}
+
 export interface MapData {
   seed: string;
+  theme: MapTheme;
   width: number;
   height: number;
   tileSize: number;
@@ -46,6 +59,9 @@ export interface MapData {
   letterSpawns: GridPoint[];
   charmSpawns: GridPoint[];
   enemySpawns: EnemySpawn[];
+  spikeTrapSpawns: SpikeTrapSpawn[];
+  hourglassSpawns: GridPoint[];
+  portalPairs: PortalPairSpawn[];
 }
 
 export interface Player extends GridPoint {
@@ -65,9 +81,26 @@ export interface Enemy extends GridPoint {
   lastPathLength: number | null;
 }
 
+export interface SpikeTrap extends GridPoint {
+  id: string;
+  phaseOffsetFrames: number;
+  active: boolean;
+}
+
 export interface Letter extends GridPoint {
   id: string;
   collected: boolean;
+}
+
+export interface Hourglass extends GridPoint {
+  id: string;
+  collected: boolean;
+}
+
+export interface Portal extends GridPoint {
+  id: string;
+  pairId: string;
+  targetId: string;
 }
 
 export interface Charm extends GridPoint {
@@ -82,8 +115,11 @@ export interface Exit extends GridPoint {
 export interface EntitySnapshot {
   player: Player;
   enemies: Enemy[];
+  spikeTraps: SpikeTrap[];
   letters: Letter[];
+  hourglasses: Hourglass[];
   charms: Charm[];
+  portals: Portal[];
   exit: Exit;
 }
 

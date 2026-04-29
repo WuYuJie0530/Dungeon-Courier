@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findPath, isFloor } from "../src/collision";
-import { generateDungeon, generateTutorialDungeon } from "../src/map";
+import { generateDungeon, generateThemeDungeon, generateTutorialDungeon } from "../src/map";
 import { mapSignature } from "./helpers";
 
 describe("deterministic dungeon generation", () => {
@@ -50,5 +50,34 @@ describe("deterministic dungeon generation", () => {
       expect(findPath(map, map.spawn, point)).not.toBeNull();
     }
     expect(mapSignature(map)).toBe(mapSignature(generateTutorialDungeon()));
+  });
+
+  it("creates legal fixed theme dungeons for levels two through five", () => {
+    const themes = ["archive", "canal", "watchtower", "core"];
+    for (let level = 2; level <= 5; level += 1) {
+      const map = generateThemeDungeon(level);
+      expect(map.theme).toBe(themes[level - 2]);
+      expect(mapSignature(map)).toBe(mapSignature(generateThemeDungeon(level)));
+      expect(map.letterSpawns).toHaveLength(3);
+      expect(findPath(map, map.spawn, map.exit)).not.toBeNull();
+      for (const point of [
+        map.spawn,
+        map.exit,
+        ...map.letterSpawns,
+        ...map.charmSpawns,
+        ...map.enemySpawns,
+        ...map.spikeTrapSpawns,
+        ...map.hourglassSpawns,
+        ...map.portalPairs.flatMap((pair) => [pair.a, pair.b]),
+      ]) {
+        expect(isFloor(map, point.x, point.y), `${map.theme} ${point.x},${point.y}`).toBe(true);
+        expect(findPath(map, map.spawn, point), `${map.theme} route ${point.x},${point.y}`).not.toBeNull();
+      }
+    }
+
+    expect(generateThemeDungeon(2).spikeTrapSpawns.length).toBeGreaterThan(0);
+    expect(generateThemeDungeon(3).hourglassSpawns.length).toBeGreaterThan(0);
+    expect(generateThemeDungeon(4).enemySpawns.some((enemy) => enemy.kind === "sentinel")).toBe(true);
+    expect(generateThemeDungeon(5).portalPairs.length).toBeGreaterThan(0);
   });
 });

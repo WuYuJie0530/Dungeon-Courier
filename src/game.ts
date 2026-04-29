@@ -10,7 +10,7 @@ import {
   rotateClockwise,
   samePoint,
 } from "./collision";
-import { generateDungeon, generateTutorialDungeon } from "./map";
+import { generateDungeon, generateThemeDungeon, generateTutorialDungeon } from "./map";
 import {
   CHARM_SHIELD_FRAMES,
   DASH_COOLDOWN_FRAMES,
@@ -26,10 +26,18 @@ import {
   type Exit,
   type GameStateSnapshot,
   type GameStatus,
+  type Hourglass,
   type Letter,
   type MapData,
   type Player,
+  type Portal,
+  type SpikeTrap,
 } from "./types";
+
+const SPIKE_CYCLE_FRAMES = 120;
+const SPIKE_ACTIVE_FRAMES = 58;
+const HOURGLASS_BONUS_SECONDS = 10;
+const PORTAL_COOLDOWN_FRAMES = 18;
 
 export class GameEngine {
   private level: number;
@@ -39,12 +47,16 @@ export class GameEngine {
   private map: MapData;
   private player: Player;
   private enemies: Enemy[];
+  private spikeTraps: SpikeTrap[];
   private letters: Letter[];
+  private hourglasses: Hourglass[];
   private charms: Charm[];
+  private portals: Portal[];
   private exit: Exit;
   private frame: number;
   private status: GameStatus;
   private collectedLetters: number;
+  private portalCooldownFrames: number;
 
   constructor(seed = levelSeed(1)) {
     this.level = 1;
@@ -54,12 +66,16 @@ export class GameEngine {
     this.map = this.createMap(seed);
     this.player = this.createPlayer();
     this.enemies = [];
+    this.spikeTraps = [];
     this.letters = [];
+    this.hourglasses = [];
     this.charms = [];
+    this.portals = [];
     this.exit = { ...this.map.exit, open: false };
     this.frame = 0;
     this.status = "playing";
     this.collectedLetters = 0;
+    this.portalCooldownFrames = 0;
     this.restart(seed);
   }
 
@@ -69,7 +85,12 @@ export class GameEngine {
 
   setUnlockedLevel(level: number): GameStateSnapshot {
     const targetLevel = Math.max(1, Math.min(MAX_LEVEL, Math.floor(level)));
-    this.unlockedLevel = Math.max(this.unlockedLevel, targetLevel);
+    this.unlockedLevel = targetLevel;
+    if (this.level > this.unlockedLevel) {
+      this.level = this.unlockedLevel;
+      this.nextSeed = levelSeed(this.level);
+      return this.restart(this.nextSeed);
+    }
     return this.getState();
   }
 
@@ -78,8 +99,21 @@ export class GameEngine {
     this.nextSeed = this.seed;
     this.map = this.createMap(this.seed);
     this.player = this.createPlayer();
+    this.spikeTraps = this.map.spikeTrapSpawns.map((point) => ({
+      id: point.id,
+      x: point.x,
+      y: point.y,
+      phaseOffsetFrames: point.phaseOffsetFrames,
+      active: false,
+    }));
     this.letters = this.map.letterSpawns.map((point, index) => ({
       id: `letter-${index}`,
+      x: point.x,
+      y: point.y,
+      collected: false,
+    }));
+    this.hourglasses = this.map.hourglassSpawns.map((point, index) => ({
+      id: `hourglass-${index}`,
       x: point.x,
       y: point.y,
       collected: false,
@@ -90,6 +124,10 @@ export class GameEngine {
       y: point.y,
       collected: false,
     }));
+    this.portals = this.map.portalPairs.flatMap((pair) => [
+      { id: `${pair.id}-a`, pairId: pair.id, targetId: `${pair.id}-b`, x: pair.a.x, y: pair.a.y },
+      { id: `${pair.id}-b`, pairId: pair.id, targetId: `${pair.id}-a`, x: pair.b.x, y: pair.b.y },
+    ]);
     const difficulty = getDifficultyProfile(this.level);
     this.enemies = this.map.enemySpawns.slice(0, difficulty.enemyCount).map((spawn) => ({
       id: spawn.id,
@@ -97,14 +135,20 @@ export class GameEngine {
       x: spawn.x,
       y: spawn.y,
       direction: spawn.direction,
-      alertRange: spawn.kind === "chaser" ? difficulty.chaserAlertRange : 0,
-      moveEveryFrames: spawn.kind === "chaser" ? difficulty.chaserMoveEveryFrames : difficulty.patrollerMoveEveryFrames,
+      alertRange: spawn.kind === "chaser" ? difficulty.chaserAlertRange : spawn.kind === "sentinel" ? difficulty.sentinelAlertRange : 0,
+      moveEveryFrames:
+        spawn.kind === "chaser"
+          ? difficulty.chaserMoveEveryFrames
+          : spawn.kind === "sentinel"
+            ? difficulty.sentinelRotateEveryFrames
+            : difficulty.patrollerMoveEveryFrames,
       lastPathLength: null,
     }));
     this.exit = { ...this.map.exit, open: false };
     this.frame = 0;
     this.status = "playing";
     this.collectedLetters = 0;
+    this.portalCooldownFrames = 0;
     return this.getState();
   }
 
@@ -179,9 +223,11 @@ export class GameEngine {
       this.player.x = target.x;
       this.player.y = target.y;
       this.collectCharmsAtPlayer();
+      this.collectHourglassesAtPlayer();
+      this.handlePortalAtPlayer();
       this.collectLettersAtPlayer();
       this.checkExit();
-      this.checkEnemyCollision();
+      this.checkHazards();
     }
     return this.getState();
   }
@@ -202,9 +248,11 @@ export class GameEngine {
       this.player.y = target.y;
       moved = true;
       this.collectCharmsAtPlayer();
+      this.collectHourglassesAtPlayer();
+      this.handlePortalAtPlayer();
       this.collectLettersAtPlayer();
       this.checkExit();
-      this.checkEnemyCollision();
+      this.checkHazards();
       if (this.status !== "playing") {
         break;
       }
@@ -251,8 +299,11 @@ export class GameEngine {
     return cloneJson({
       player: this.player,
       enemies: this.enemies,
+      spikeTraps: this.getSpikeTrapSnapshots(),
       letters: this.letters,
+      hourglasses: this.hourglasses,
       charms: this.charms,
+      portals: this.portals,
       exit: this.exit,
     });
   }
@@ -273,6 +324,9 @@ export class GameEngine {
     if (this.level === 1 && seed === levelSeed(1)) {
       return generateTutorialDungeon(seed);
     }
+    if (seed === levelSeed(this.level) && this.level >= 2 && this.level <= MAX_LEVEL) {
+      return generateThemeDungeon(this.level, seed);
+    }
     return generateDungeon(seed);
   }
 
@@ -281,9 +335,10 @@ export class GameEngine {
     this.player.dashCooldownFrames = Math.max(0, this.player.dashCooldownFrames - 1);
     this.player.invulnerableFrames = Math.max(0, this.player.invulnerableFrames - 1);
     this.player.shieldFrames = Math.max(0, this.player.shieldFrames - 1);
+    this.portalCooldownFrames = Math.max(0, this.portalCooldownFrames - 1);
 
     this.updateEnemies();
-    this.checkEnemyCollision();
+    this.checkHazards();
 
     if (this.frame >= TIME_LIMIT_SECONDS * FPS && this.status === "playing") {
       this.status = "lost";
@@ -297,8 +352,10 @@ export class GameEngine {
       }
       if (enemy.kind === "chaser") {
         this.updateChaser(enemy);
-      } else {
+      } else if (enemy.kind === "patroller") {
         this.updatePatroller(enemy);
+      } else {
+        enemy.direction = rotateClockwise(enemy.direction);
       }
     }
   }
@@ -338,6 +395,32 @@ export class GameEngine {
     }
   }
 
+  private collectHourglassesAtPlayer(): void {
+    for (const hourglass of this.hourglasses) {
+      if (!hourglass.collected && samePoint(hourglass, this.player)) {
+        hourglass.collected = true;
+        this.frame = Math.max(0, this.frame - HOURGLASS_BONUS_SECONDS * FPS);
+      }
+    }
+  }
+
+  private handlePortalAtPlayer(): void {
+    if (this.portalCooldownFrames > 0) {
+      return;
+    }
+    const portal = this.portals.find((candidate) => samePoint(candidate, this.player));
+    if (!portal) {
+      return;
+    }
+    const target = this.portals.find((candidate) => candidate.id === portal.targetId);
+    if (!target) {
+      return;
+    }
+    this.player.x = target.x;
+    this.player.y = target.y;
+    this.portalCooldownFrames = PORTAL_COOLDOWN_FRAMES;
+  }
+
   private collectLettersAtPlayer(): void {
     for (const letter of this.letters) {
       if (!letter.collected && samePoint(letter, this.player)) {
@@ -373,6 +456,56 @@ export class GameEngine {
       return;
     }
 
+    this.damagePlayer();
+  }
+
+  private checkHazards(): void {
+    this.checkEnemyCollision();
+    this.checkSpikeCollision();
+    this.checkSentinelVision();
+  }
+
+  private checkSpikeCollision(): void {
+    if (this.status !== "playing" || this.player.invulnerableFrames > 0 || this.player.shieldFrames > 0) {
+      return;
+    }
+    const hit = this.getSpikeTrapSnapshots().some((spike) => spike.active && samePoint(spike, this.player));
+    if (hit) {
+      this.damagePlayer();
+    }
+  }
+
+  private checkSentinelVision(): void {
+    if (this.status !== "playing" || this.player.invulnerableFrames > 0 || this.player.shieldFrames > 0) {
+      return;
+    }
+    const hit = this.enemies.some((enemy) => enemy.kind === "sentinel" && this.canSentinelSeePlayer(enemy));
+    if (hit) {
+      this.damagePlayer();
+    }
+  }
+
+  private canSentinelSeePlayer(enemy: Enemy): boolean {
+    const vector = DIR_VECTORS[enemy.direction];
+    let x = enemy.x + vector.x;
+    let y = enemy.y + vector.y;
+    for (let distance = 1; distance <= enemy.alertRange; distance += 1) {
+      if (!isFloor(this.map, x, y)) {
+        return false;
+      }
+      if (this.player.x === x && this.player.y === y) {
+        return true;
+      }
+      x += vector.x;
+      y += vector.y;
+    }
+    return false;
+  }
+
+  private damagePlayer(): void {
+    if (this.status !== "playing" || this.player.invulnerableFrames > 0 || this.player.shieldFrames > 0) {
+      return;
+    }
     this.player.lives = Math.max(0, this.player.lives - 1);
     this.player.invulnerableFrames = 60;
     if (this.player.lives === 0) {
@@ -382,6 +515,13 @@ export class GameEngine {
 
   private getTimeRemaining(): number {
     return Math.max(0, TIME_LIMIT_SECONDS - this.frame / FPS);
+  }
+
+  private getSpikeTrapSnapshots(): SpikeTrap[] {
+    return this.spikeTraps.map((spike) => ({
+      ...spike,
+      active: (this.frame + spike.phaseOffsetFrames) % SPIKE_CYCLE_FRAMES < SPIKE_ACTIVE_FRAMES,
+    }));
   }
 }
 
@@ -397,6 +537,8 @@ interface DifficultyProfile {
   chaserAlertRange: number;
   chaserMoveEveryFrames: number;
   patrollerMoveEveryFrames: number;
+  sentinelAlertRange: number;
+  sentinelRotateEveryFrames: number;
 }
 
 export function getDifficultyProfile(level: number): DifficultyProfile {
@@ -409,6 +551,8 @@ export function getDifficultyProfile(level: number): DifficultyProfile {
       chaserAlertRange: 4,
       chaserMoveEveryFrames: 26,
       patrollerMoveEveryFrames: 32,
+      sentinelAlertRange: 0,
+      sentinelRotateEveryFrames: 120,
     };
   }
   if (normalizedLevel === 2) {
@@ -419,6 +563,8 @@ export function getDifficultyProfile(level: number): DifficultyProfile {
       chaserAlertRange: 5,
       chaserMoveEveryFrames: 22,
       patrollerMoveEveryFrames: 28,
+      sentinelAlertRange: 5,
+      sentinelRotateEveryFrames: 110,
     };
   }
   if (normalizedLevel === 3) {
@@ -429,6 +575,8 @@ export function getDifficultyProfile(level: number): DifficultyProfile {
       chaserAlertRange: 6,
       chaserMoveEveryFrames: 18,
       patrollerMoveEveryFrames: 24,
+      sentinelAlertRange: 6,
+      sentinelRotateEveryFrames: 100,
     };
   }
   if (normalizedLevel === 4) {
@@ -439,6 +587,8 @@ export function getDifficultyProfile(level: number): DifficultyProfile {
       chaserAlertRange: 7,
       chaserMoveEveryFrames: 16,
       patrollerMoveEveryFrames: 20,
+      sentinelAlertRange: 7,
+      sentinelRotateEveryFrames: 86,
     };
   }
 
@@ -449,6 +599,8 @@ export function getDifficultyProfile(level: number): DifficultyProfile {
     chaserAlertRange: 8,
     chaserMoveEveryFrames: 14,
     patrollerMoveEveryFrames: 18,
+    sentinelAlertRange: 8,
+    sentinelRotateEveryFrames: 76,
   };
 }
 

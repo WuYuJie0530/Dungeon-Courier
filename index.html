@@ -13,6 +13,7 @@
             <p class="start-kicker">Dungeon Courier</p>
             <h1>地牢信使</h1>
             <strong>Dungeon Courier</strong>
+            <p id="startProgressText" class="start-progress-text">从第 1 关开始派送</p>
           </div>
           <div class="start-actions" aria-label="主菜单">
             <button id="startGameButton" class="start-action primary-start-action" type="button">开始游戏</button>
@@ -26,11 +27,14 @@
               <h2>操作说明</h2>
               <button id="startHelpClose" class="start-help-close" type="button" aria-label="关闭操作说明">×</button>
             </div>
-            <div class="control-row"><kbd>W A S D</kbd><span>移动</span></div>
-            <div class="control-row"><kbd>↑ ↓ ← →</kbd><span>移动</span></div>
-            <div class="control-row"><kbd>Shift</kbd><span>冲刺</span></div>
-            <div class="control-row"><kbd>P</kbd><span>暂停 / 继续</span></div>
-            <div class="control-row"><kbd>R</kbd><span>重开关卡</span></div>
+            <div class="control-row keyboard-control-row"><kbd>W A S D</kbd><span>移动</span></div>
+            <div class="control-row keyboard-control-row"><kbd>↑ ↓ ← →</kbd><span>移动</span></div>
+            <div class="control-row keyboard-control-row"><kbd>Shift</kbd><span>冲刺</span></div>
+            <div class="control-row keyboard-control-row"><kbd>P</kbd><span>暂停 / 继续</span></div>
+            <div class="control-row keyboard-control-row"><kbd>R</kbd><span>重开关卡</span></div>
+            <div class="control-row touch-control-row"><kbd>方向键</kbd><span>移动</span></div>
+            <div class="control-row touch-control-row"><kbd>冲刺</kbd><span>按当前朝向冲刺</span></div>
+            <div class="control-row touch-control-row"><kbd>暂停</kbd><span>暂停 / 继续</span></div>
           </div>
         </section>
       </div>
@@ -149,15 +153,28 @@
                 <p>进入视野后会追踪你，被其发现则失败。</p>
               </div>
             </div>
+            <div class="enemy-card">
+              <div class="enemy-visual" aria-hidden="true">
+                <span class="enemy-avatar sentinel-avatar"></span>
+                <div class="sentinel-beam"></div>
+              </div>
+              <div class="enemy-copy">
+                <strong>哨兵</strong>
+                <p>固定守卫并旋转视线，躲在墙后可避开侦测。</p>
+              </div>
+            </div>
           </section>
 
           <section class="info-panel controls-panel">
             <h2>操作说明</h2>
-            <div class="control-row"><kbd>W A S D</kbd><span>移动</span></div>
-            <div class="control-row"><kbd>↑ ↓ ← →</kbd><span>移动</span></div>
-            <div class="control-row"><kbd>Shift</kbd><span>冲刺</span></div>
-            <div class="control-row"><kbd>P</kbd><span>暂停 / 继续</span></div>
-            <div class="control-row"><kbd>R</kbd><span>重开关卡</span></div>
+            <div class="control-row keyboard-control-row"><kbd>W A S D</kbd><span>移动</span></div>
+            <div class="control-row keyboard-control-row"><kbd>↑ ↓ ← →</kbd><span>移动</span></div>
+            <div class="control-row keyboard-control-row"><kbd>Shift</kbd><span>冲刺</span></div>
+            <div class="control-row keyboard-control-row"><kbd>P</kbd><span>暂停 / 继续</span></div>
+            <div class="control-row keyboard-control-row"><kbd>R</kbd><span>重开关卡</span></div>
+            <div class="control-row touch-control-row"><kbd>方向键</kbd><span>移动</span></div>
+            <div class="control-row touch-control-row"><kbd>冲刺</kbd><span>按当前朝向冲刺</span></div>
+            <div class="control-row touch-control-row"><kbd>暂停</kbd><span>暂停 / 继续</span></div>
           </section>
         </aside>
 
@@ -253,10 +270,14 @@
                 <div><span class="legend-icon charm-legend"></span><span>护符</span></div>
                 <div><span class="legend-icon exit-legend"></span><span>出口</span></div>
                 <div><span class="legend-icon wall-legend"></span><span>墙体</span></div>
+                <div><span class="legend-icon spike-legend"></span><span>尖刺</span></div>
+                <div><span class="legend-icon hourglass-legend"></span><span>沙漏</span></div>
               </div>
               <div class="legend-column" aria-label="角色与敌人图例">
                 <div><span class="legend-icon chaser-legend"></span><span>追踪者</span></div>
                 <div><span class="legend-icon patrol-legend"></span><span>巡逻者</span></div>
+                <div><span class="legend-icon sentinel-legend"></span><span>哨兵</span></div>
+                <div><span class="legend-icon portal-legend"></span><span>传送门</span></div>
                 <div><span class="legend-icon player-legend"></span><span>玩家</span></div>
               </div>
             </div>
@@ -292,6 +313,22 @@
             <button id="levelSelectClose" class="level-select-close" type="button" aria-label="关闭关卡选择">×</button>
           </div>
           <div id="levelSelectGrid" class="level-select-grid"></div>
+          <div class="level-select-footer">
+            <button id="resetProgressButton" class="reset-progress-button" type="button" aria-expanded="false" aria-controls="resetProgressOverlay">
+              重置进度
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div id="resetProgressOverlay" class="reset-progress-overlay" hidden>
+        <section class="reset-progress-card" role="dialog" aria-modal="true" aria-label="确认重置进度">
+          <h2>重置进度</h2>
+          <p>将清空已解锁关卡和所有最佳记录，此操作不可撤销。</p>
+          <div class="reset-progress-actions">
+            <button id="cancelResetProgressButton" type="button">取消</button>
+            <button id="confirmResetProgressButton" class="danger-action" type="button">确认重置</button>
+          </div>
         </section>
       </div>
     </div>

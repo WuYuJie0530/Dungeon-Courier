@@ -53,5 +53,8 @@ export function mapSignature(map: MapData): string {
     letters: map.letterSpawns,
     charms: map.charmSpawns,
     enemies: map.enemySpawns,
+    spikes: map.spikeTrapSpawns,
+    hourglasses: map.hourglassSpawns,
+    portals: map.portalPairs,
   });
 }

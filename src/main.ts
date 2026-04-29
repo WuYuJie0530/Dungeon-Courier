@@ -1,6 +1,15 @@
 import { AudioManager } from "./audio";
 import { GameEngine } from "./game";
-import { gradeFromState, loadProgress, saveProgress, updateProgressWithResult, type ProgressData } from "./progress";
+import {
+  gradeFromState,
+  hasSavedProgress,
+  loadProgress,
+  resetProgress,
+  saveProgress,
+  updateLastPlayedLevel,
+  updateProgressWithResult,
+  type ProgressData,
+} from "./progress";
 import { Renderer } from "./render";
 import { installTestApi } from "./testApi";
 import {
@@ -8,6 +17,7 @@ import {
   DASH_COOLDOWN_FRAMES,
   MAX_LEVEL,
   PLAYER_START_LIVES,
+  TIME_LIMIT_SECONDS,
   type Direction,
   type GameStateSnapshot,
 } from "./types";
@@ -20,6 +30,7 @@ const audio = new AudioManager();
 const appShell = requiredElement<HTMLDivElement>("app");
 const startOverlay = requiredElement<HTMLDivElement>("startOverlay");
 const startGameButton = requiredElement<HTMLButtonElement>("startGameButton");
+const startProgressText = requiredElement<HTMLParagraphElement>("startProgressText");
 const startHelpButton = requiredElement<HTMLButtonElement>("startHelpButton");
 const startLevelSelectButton = requiredElement<HTMLButtonElement>("startLevelSelectButton");
 const startHelpPanel = requiredElement<HTMLDivElement>("startHelpPanel");
@@ -46,6 +57,10 @@ const levelSelectOverlay = requiredElement<HTMLDivElement>("levelSelectOverlay")
 const levelSelectGrid = requiredElement<HTMLDivElement>("levelSelectGrid");
 const levelSelectSummary = requiredElement<HTMLElement>("levelSelectSummary");
 const levelSelectClose = requiredElement<HTMLButtonElement>("levelSelectClose");
+const resetProgressButton = requiredElement<HTMLButtonElement>("resetProgressButton");
+const resetProgressOverlay = requiredElement<HTMLDivElement>("resetProgressOverlay");
+const cancelResetProgressButton = requiredElement<HTMLButtonElement>("cancelResetProgressButton");
+const confirmResetProgressButton = requiredElement<HTMLButtonElement>("confirmResetProgressButton");
 const resultOverlay = requiredElement<HTMLDivElement>("resultOverlay");
 const resultTitle = requiredElement<HTMLParagraphElement>("resultTitle");
 const resultSubtitle = requiredElement<HTMLParagraphElement>("resultSubtitle");
@@ -91,6 +106,7 @@ function renderNow(): void {
 audio.load();
 updateSoundButton();
 updateVolumePanel();
+updateStartProgress();
 
 window.addEventListener(
   "pointerdown",
@@ -109,7 +125,7 @@ installTestApi(
 );
 
 startGameButton.addEventListener("click", () => {
-  beginGame();
+  continueFromStart();
 });
 
 startHelpButton.addEventListener("click", () => {
@@ -134,20 +150,23 @@ overlayRestartButton.addEventListener("click", () => {
   audio.enableMusic();
   audio.play("click");
   const status = engine.getState().status;
+  let nextState: GameStateSnapshot;
   if (status === "won") {
-    engine.nextLevel();
+    nextState = engine.nextLevel();
   } else if (status === "completed") {
-    engine.restartCampaign();
+    nextState = engine.restartCampaign();
   } else {
-    engine.restartLevel();
+    nextState = engine.restartLevel();
   }
+  rememberLastPlayedLevel(nextState.level);
   renderNow();
 });
 
 overlayRetryButton.addEventListener("click", () => {
   audio.enableMusic();
   audio.play("click");
-  engine.restartLevel();
+  const nextState = engine.restartLevel();
+  rememberLastPlayedLevel(nextState.level);
   renderNow();
 });
 
@@ -160,7 +179,8 @@ resultLevelSelectButton.addEventListener("click", () => {
 campaignRestartButton.addEventListener("click", () => {
   audio.enableMusic();
   audio.play("click");
-  engine.restartCampaign();
+  const nextState = engine.restartCampaign();
+  rememberLastPlayedLevel(nextState.level);
   renderNow();
 });
 
@@ -176,9 +196,33 @@ levelSelectClose.addEventListener("click", () => {
   closeLevelSelect();
 });
 
+resetProgressButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
+  openResetProgressConfirm();
+});
+
+cancelResetProgressButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
+  closeResetProgressConfirm();
+});
+
+confirmResetProgressButton.addEventListener("click", () => {
+  audio.enableMusic();
+  audio.play("click");
+  resetGameProgress();
+});
+
 levelSelectOverlay.addEventListener("click", (event) => {
   if (event.target === levelSelectOverlay) {
     closeLevelSelect();
+  }
+});
+
+resetProgressOverlay.addEventListener("click", (event) => {
+  if (event.target === resetProgressOverlay) {
+    closeResetProgressConfirm();
   }
 });
 
@@ -242,7 +286,9 @@ window.addEventListener("keydown", (event) => {
   unlockMusic();
   if (!gameStarted) {
     if (event.key === "Escape") {
-      if (!levelSelectOverlay.hidden) {
+      if (!resetProgressOverlay.hidden) {
+        closeResetProgressConfirm();
+      } else if (!levelSelectOverlay.hidden) {
         closeLevelSelect();
       } else if (!startHelpPanel.hidden) {
         setStartHelpOpen(false);
@@ -279,13 +325,18 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (event.key.toLowerCase() === "r") {
-    engine.restartLevel();
+    const nextState = engine.restartLevel();
+    rememberLastPlayedLevel(nextState.level);
     renderNow();
     return;
   }
 
-  if (event.key === "Escape" && !levelSelectOverlay.hidden) {
-    closeLevelSelect();
+  if (event.key === "Escape") {
+    if (!resetProgressOverlay.hidden) {
+      closeResetProgressConfirm();
+    } else if (!levelSelectOverlay.hidden) {
+      closeLevelSelect();
+    }
   }
 });
 
@@ -415,6 +466,29 @@ function updateVolumePanel(): void {
   musicVolumeValue.textContent = `${musicPercent}%`;
 }
 
+function continueFromStart(): void {
+  const targetLevel = progressData.lastPlayedLevel;
+  engine.selectLevel(targetLevel);
+  rememberLastPlayedLevel(targetLevel);
+  beginGame();
+}
+
+function rememberLastPlayedLevel(level: number): void {
+  progressData = updateLastPlayedLevel(progressData, level);
+  saveProgress(progressData);
+  levelSelectRenderKey = "";
+  updateStartProgress();
+}
+
+function updateStartProgress(): void {
+  const hasProgress = hasSavedProgress(progressData);
+  const recordCount = Object.keys(progressData.records).length;
+  startGameButton.textContent = hasProgress ? "继续游戏" : "开始游戏";
+  startProgressText.textContent = hasProgress
+    ? `继续第 ${progressData.lastPlayedLevel} 关 · 已解锁 ${progressData.unlockedLevel} / ${MAX_LEVEL}${recordCount > 0 ? ` · 最佳记录 ${recordCount} / ${MAX_LEVEL}` : ""}`
+    : "从第 1 关开始派送";
+}
+
 function beginGame(playFeedback = true): void {
   gameStarted = true;
   startOverlay.hidden = true;
@@ -438,7 +512,7 @@ function setStartHelpOpen(open: boolean): void {
 
 function updateHud(state: GameStateSnapshot): void {
   const chasers = state.enemies.filter((enemy) => enemy.kind === "chaser").length;
-  const patrollers = state.enemies.length - chasers;
+  const patrollers = state.enemies.filter((enemy) => enemy.kind === "patroller").length;
   hud.lives.replaceChildren(...createLifePips(state.lives));
   hud.timer.textContent = formatClock(state.timeRemaining);
   hud.letters.textContent = `${pad2(state.collectedLetters)} / ${pad2(state.totalLetters)}`;
@@ -470,15 +544,37 @@ function openLevelSelect(): void {
 }
 
 function closeLevelSelect(): void {
+  closeResetProgressConfirm();
   levelSelectOverlay.hidden = true;
   levelSelectButton.setAttribute("aria-expanded", "false");
   startLevelSelectButton.setAttribute("aria-expanded", "false");
 }
 
+function openResetProgressConfirm(): void {
+  resetProgressOverlay.hidden = false;
+  resetProgressButton.setAttribute("aria-expanded", "true");
+}
+
+function closeResetProgressConfirm(): void {
+  resetProgressOverlay.hidden = true;
+  resetProgressButton.setAttribute("aria-expanded", "false");
+}
+
+function resetGameProgress(): void {
+  progressData = resetProgress();
+  engine.setUnlockedLevel(progressData.unlockedLevel);
+  engine.restartCampaign();
+  closeResetProgressConfirm();
+  levelSelectRenderKey = "";
+  updateStartProgress();
+  renderNow();
+}
+
 function renderLevelSelect(state: GameStateSnapshot): void {
   const savedRecords = progressData.records;
   const recordCount = Object.keys(savedRecords).length;
-  const renderKey = `${state.level}:${state.unlockedLevel}:${state.maxLevel}:${progressData.unlockedLevel}:${JSON.stringify(savedRecords)}`;
+  const recommendedLevel = recommendedLevelForProgress(state);
+  const renderKey = `${state.level}:${state.unlockedLevel}:${state.maxLevel}:${progressData.unlockedLevel}:${progressData.lastPlayedLevel}:${recommendedLevel}:${JSON.stringify(savedRecords)}`;
   if (renderKey === levelSelectRenderKey && levelSelectGrid.children.length > 0) {
     return;
   }
@@ -489,25 +585,31 @@ function renderLevelSelect(state: GameStateSnapshot): void {
       const level = index + 1;
       const unlocked = level <= state.unlockedLevel;
       const current = level === state.level;
+      const recommended = level === recommendedLevel;
       const record = savedRecords[level];
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "level-choice";
+      button.className = recommended ? "level-choice is-recommended" : "level-choice";
       button.disabled = !unlocked;
       button.dataset.level = String(level);
       button.setAttribute("aria-current", current ? "true" : "false");
 
       const title = document.createElement("span");
+      title.className = "level-choice-title";
       title.textContent = `第 ${level} 关`;
+      const badge = document.createElement("em");
+      badge.className = "level-recommend-badge";
+      badge.textContent = "推荐继续";
       const detail = document.createElement("small");
-      detail.textContent = record ? `最佳 ${record.grade} · ${formatClock(record.timeRemaining)}` : current ? "当前关卡" : unlocked ? "已解锁" : "未解锁";
-      button.replaceChildren(title, detail);
+      detail.textContent = record ? `最佳 ${record.grade} · ${formatCompletionSeconds(record.timeRemaining)}` : unlocked ? "待挑战" : "未解锁";
+      button.replaceChildren(...(recommended ? [title, badge, detail] : [title, detail]));
 
       if (unlocked) {
         button.addEventListener("click", () => {
           audio.enableMusic();
           audio.play("click");
           engine.selectLevel(level);
+          rememberLastPlayedLevel(level);
           closeLevelSelect();
           if (!gameStarted) {
             beginGame(false);
@@ -518,6 +620,18 @@ function renderLevelSelect(state: GameStateSnapshot): void {
       return button;
     }),
   );
+}
+
+function recommendedLevelForProgress(state: GameStateSnapshot): number {
+  if (state.status === "completed" || state.campaignCompleted) {
+    return state.maxLevel;
+  }
+  for (let level = 1; level <= state.unlockedLevel; level += 1) {
+    if (!progressData.records[level]) {
+      return level;
+    }
+  }
+  return Math.max(1, Math.min(state.unlockedLevel, progressData.lastPlayedLevel));
 }
 
 function updateResultOverlay(state: GameStateSnapshot): void {
@@ -561,6 +675,7 @@ function persistProgressResult(previous: GameStateSnapshot | null, current: Game
   saveProgress(progressData);
   engine.setUnlockedLevel(progressData.unlockedLevel);
   levelSelectRenderKey = "";
+  updateStartProgress();
 }
 
 function objectiveText(state: GameStateSnapshot): string {
@@ -584,6 +699,18 @@ function objectiveText(state: GameStateSnapshot): string {
       return "出口还未开启，继续寻找剩余信件。";
     }
     return "最后一封信在危险区附近，必要时使用护符或冲刺。";
+  }
+  if (state.level === 2) {
+    return state.exit.open ? "信件已收齐，穿过档案长廊抵达出口。" : "观察尖刺节奏，利用凹室收集三封信。";
+  }
+  if (state.level === 3) {
+    return state.exit.open ? "出口已开启，沿水渠回廊撤离。" : "路线更长，拾取沙漏可争取额外时间。";
+  }
+  if (state.level === 4) {
+    return state.exit.open ? "避开哨兵视线，前往监牢出口。" : "哨兵视线会旋转，利用墙体遮挡推进。";
+  }
+  if (state.level === 5) {
+    return state.exit.open ? "核心出口已开启，使用传送门快速撤离。" : "核心密道会混合陷阱、哨兵和传送门。";
   }
   if (state.shieldActive) {
     return "护符屏障生效，利用窗口穿过危险区域。";
@@ -636,6 +763,11 @@ function formatClock(seconds: number): string {
   const minutes = Math.floor(whole / 60);
   const rest = whole % 60;
   return `${pad2(minutes)}:${pad2(rest)}`;
+}
+
+function formatCompletionSeconds(timeRemaining: number): string {
+  const elapsed = Math.max(0, Math.min(TIME_LIMIT_SECONDS, Math.round(TIME_LIMIT_SECONDS - timeRemaining)));
+  return `用时 ${elapsed} 秒`;
 }
 
 function pad2(value: number): string {

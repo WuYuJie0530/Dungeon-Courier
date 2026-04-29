@@ -284,6 +284,36 @@ describe("Dungeon Courier engine", () => {
     expect(stillLocked.level).toBe(2);
   });
 
+  it("applies level-specific mechanics from themed dungeons", () => {
+    const spikes = new GameEngine();
+    spikes.setUnlockedLevel(2);
+    spikes.selectLevel(2);
+    expect(spikes.getMap().theme).toBe("archive");
+    expect(spikes.getState().spikeTraps.length).toBeGreaterThan(0);
+
+    const hourglass = new GameEngine();
+    hourglass.setUnlockedLevel(3);
+    hourglass.selectLevel(3);
+    const hourglassPoint = hourglass.getState().hourglasses[0];
+    hourglass.step(600);
+    const beforeHourglass = hourglass.getState().timeRemaining;
+    routeTo(hourglass, hourglassPoint);
+    expect(hourglass.getState().timeRemaining).toBeGreaterThan(beforeHourglass);
+
+    const sentinel = new GameEngine();
+    sentinel.setUnlockedLevel(4);
+    sentinel.selectLevel(4);
+    expect(sentinel.getState().enemies.some((enemy) => enemy.kind === "sentinel")).toBe(true);
+
+    const portal = new GameEngine();
+    portal.setUnlockedLevel(5);
+    portal.selectLevel(5);
+    const firstPortal = portal.getState().portals[0];
+    const targetPortal = portal.getState().portals.find((candidate) => candidate.id === firstPortal.targetId)!;
+    routeTo(portal, firstPortal);
+    expect(portal.getState().player).toMatchObject({ x: targetPortal.x, y: targetPortal.y });
+  });
+
   it("accepts saved unlocked progress without lowering it on campaign restart", () => {
     const engine = new GameEngine();
     engine.setUnlockedLevel(3);
@@ -298,5 +328,16 @@ describe("Dungeon Courier engine", () => {
     const restarted = engine.restartCampaign();
     expect(restarted.level).toBe(1);
     expect(restarted.unlockedLevel).toBe(3);
+  });
+
+  it("can restore a lower unlocked level when local progress is reset", () => {
+    const engine = new GameEngine();
+    engine.setUnlockedLevel(3);
+    expect(engine.selectLevel(3).level).toBe(3);
+
+    const reset = engine.setUnlockedLevel(1);
+    expect(reset.unlockedLevel).toBe(1);
+    expect(reset.level).toBe(1);
+    expect(engine.selectLevel(2).level).toBe(1);
   });
 });

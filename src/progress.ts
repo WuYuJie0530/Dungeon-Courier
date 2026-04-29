@@ -14,6 +14,7 @@ export interface LevelRecord {
 
 export interface ProgressData {
   unlockedLevel: number;
+  lastPlayedLevel: number;
   records: Partial<Record<number, LevelRecord>>;
 }
 
@@ -21,6 +22,7 @@ type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
 const DEFAULT_PROGRESS: ProgressData = {
   unlockedLevel: 1,
+  lastPlayedLevel: 1,
   records: {},
 };
 
@@ -55,24 +57,45 @@ export function saveProgress(progress: ProgressData, storage: StorageLike | unde
   storage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(sanitizeProgress(progress)));
 }
 
+export function resetProgress(storage: StorageLike | undefined = browserStorage()): ProgressData {
+  const progress = defaultProgress();
+  saveProgress(progress, storage);
+  return progress;
+}
+
 export function updateProgressWithResult(progress: ProgressData, state: GameStateSnapshot, now = Date.now()): ProgressData {
+  const sanitized = sanitizeProgress(progress);
   if (state.status !== "won" && state.status !== "completed") {
-    return sanitizeProgress(progress);
+    return sanitized;
   }
 
   const level = clampLevel(state.level);
   const nextUnlocked = state.status === "completed" ? MAX_LEVEL : Math.min(MAX_LEVEL, level + 1);
   const record = recordFromState(state, now);
-  const currentRecord = progress.records[level];
-  const records = { ...sanitizeProgress(progress).records };
+  const currentRecord = sanitized.records[level];
+  const records = { ...sanitized.records };
   if (!currentRecord || isBetterRecord(record, currentRecord)) {
     records[level] = record;
   }
 
   return sanitizeProgress({
-    unlockedLevel: Math.max(progress.unlockedLevel, nextUnlocked),
+    unlockedLevel: Math.max(sanitized.unlockedLevel, nextUnlocked),
+    lastPlayedLevel: nextUnlocked,
     records,
   });
+}
+
+export function updateLastPlayedLevel(progress: ProgressData, level: number): ProgressData {
+  const sanitized = sanitizeProgress(progress);
+  return sanitizeProgress({
+    ...sanitized,
+    lastPlayedLevel: Math.max(1, Math.min(sanitized.unlockedLevel, Math.floor(finiteNumber(level, sanitized.lastPlayedLevel)))),
+  });
+}
+
+export function hasSavedProgress(progress: ProgressData): boolean {
+  const sanitized = sanitizeProgress(progress);
+  return sanitized.unlockedLevel > 1 || Object.keys(sanitized.records).length > 0;
 }
 
 export function gradeFromState(state: GameStateSnapshot): ResultGrade {
@@ -118,8 +141,10 @@ export function sanitizeProgress(value: unknown): ProgressData {
     return defaultProgress();
   }
 
-  const source = value as { unlockedLevel?: unknown; records?: unknown };
+  const source = value as { unlockedLevel?: unknown; lastPlayedLevel?: unknown; records?: unknown };
   const unlockedLevel = sanitizeUnlockedLevel(source.unlockedLevel);
+  const lastPlayedFallback = source.lastPlayedLevel === undefined ? unlockedLevel : 1;
+  const lastPlayedLevel = sanitizeLastPlayedLevel(source.lastPlayedLevel, unlockedLevel, lastPlayedFallback);
   const records: Partial<Record<number, LevelRecord>> = {};
   if (source.records && typeof source.records === "object") {
     for (const [key, rawRecord] of Object.entries(source.records)) {
@@ -133,6 +158,7 @@ export function sanitizeProgress(value: unknown): ProgressData {
 
   return {
     unlockedLevel,
+    lastPlayedLevel,
     records,
   };
 }
@@ -168,6 +194,13 @@ function sanitizeUnlockedLevel(value: unknown): number {
   return clampLevel(Math.floor(finiteNumber(value, 1)));
 }
 
+function sanitizeLastPlayedLevel(value: unknown, unlockedLevel: number, fallback: number): number {
+  const parsed = Math.floor(finiteNumber(value, fallback));
+  const safeFallback = Math.max(1, Math.min(unlockedLevel, Math.floor(finiteNumber(fallback, 1))));
+  const level = Number.isFinite(parsed) ? parsed : safeFallback;
+  return Math.max(1, Math.min(unlockedLevel, level));
+}
+
 function clampLevel(level: number): number {
   return Math.max(1, Math.min(MAX_LEVEL, Number.isFinite(level) ? level : 1));
 }
@@ -183,6 +216,7 @@ function isGrade(value: unknown): value is ResultGrade {
 function cloneProgress(progress: ProgressData): ProgressData {
   return {
     unlockedLevel: progress.unlockedLevel,
+    lastPlayedLevel: progress.lastPlayedLevel,
     records: { ...progress.records },
   };
 }
