@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { DIRECTIONS, findPath, isFloor, manhattan, nextPoint } from "../src/collision";
-import { CHARM_SHIELD_FRAMES, DASH_COOLDOWN_FRAMES, FPS, MAX_LEVEL, TIME_LIMIT_SECONDS } from "../src/types";
+import {
+  CHARM_SHIELD_FRAMES,
+  DASH_COOLDOWN_FRAMES,
+  FPS,
+  MAX_LEVEL,
+  PLAYER_START_LIVES,
+  TIME_LIMIT_SECONDS,
+} from "../src/types";
 import { GameEngine } from "../src/game";
 import { generateTutorialDungeon } from "../src/map";
 import { findOpenDirection, mapSignature, routeTo } from "./helpers";
@@ -312,6 +319,17 @@ describe("Dungeon Courier engine", () => {
     const targetPortal = portal.getState().portals.find((candidate) => candidate.id === firstPortal.targetId)!;
     routeTo(portal, firstPortal);
     expect(portal.getState().player).toMatchObject({ x: targetPortal.x, y: targetPortal.y });
+  });
+
+  it("does not damage the player immediately on the fifth level spawn", () => {
+    const engine = new GameEngine();
+    engine.setUnlockedLevel(5);
+    engine.selectLevel(5);
+
+    expect(engine.getState().player.lives).toBe(PLAYER_START_LIVES);
+    engine.step(1);
+    expect(engine.getState().player.lives).toBe(PLAYER_START_LIVES);
+    expect(engine.getState().status).toBe("playing");
   });
 
   it("accepts saved unlocked progress without lowering it on campaign restart", () => {

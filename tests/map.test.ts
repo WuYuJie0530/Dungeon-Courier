@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findPath, isFloor } from "../src/collision";
+import { DIR_VECTORS, findPath, isFloor } from "../src/collision";
 import { generateDungeon, generateThemeDungeon, generateTutorialDungeon } from "../src/map";
 import { mapSignature } from "./helpers";
 
@@ -80,4 +80,34 @@ describe("deterministic dungeon generation", () => {
     expect(generateThemeDungeon(4).enemySpawns.some((enemy) => enemy.kind === "sentinel")).toBe(true);
     expect(generateThemeDungeon(5).portalPairs.length).toBeGreaterThan(0);
   });
+
+  it("keeps the fifth level spawn outside initial sentinel vision", () => {
+    const map = generateThemeDungeon(5);
+    const sentinels = map.enemySpawns.filter((enemy) => enemy.kind === "sentinel");
+
+    expect(sentinels).not.toHaveLength(0);
+    expect(sentinels.some((enemy) => canSeePoint(map, enemy, map.spawn, 8))).toBe(false);
+  });
 });
+
+function canSeePoint(
+  map: ReturnType<typeof generateThemeDungeon>,
+  enemy: { x: number; y: number; direction: keyof typeof DIR_VECTORS },
+  target: { x: number; y: number },
+  range: number,
+): boolean {
+  const vector = DIR_VECTORS[enemy.direction];
+  let x = enemy.x + vector.x;
+  let y = enemy.y + vector.y;
+  for (let distance = 1; distance <= range; distance += 1) {
+    if (!isFloor(map, x, y)) {
+      return false;
+    }
+    if (target.x === x && target.y === y) {
+      return true;
+    }
+    x += vector.x;
+    y += vector.y;
+  }
+  return false;
+}

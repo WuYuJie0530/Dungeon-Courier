@@ -305,7 +305,7 @@ function generateCoreDungeon(seed: string): MapData {
     ],
     charmSpawns: [{ x: 6, y: 13 }],
     enemySpawns: [
-      { id: "core-sentinel-1", kind: "sentinel", x: 20, y: 8, direction: "down" },
+      { id: "core-sentinel-1", kind: "sentinel", x: 20, y: 8, direction: "right" },
       { id: "core-chaser-1", kind: "chaser", x: 6, y: 5, direction: "right" },
       { id: "core-patroller-1", kind: "patroller", x: 27, y: 13, direction: "left" },
       { id: "core-sentinel-2", kind: "sentinel", x: 34, y: 20, direction: "up" },
